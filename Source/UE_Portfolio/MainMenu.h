@@ -29,8 +29,8 @@ private:
 	bool ValidatePlayerController();
 	bool ValidateButton(UButton* Button, const FString& ButtonName);
 
-	const FName NewGameLevelName = "GameMain";
-	const FString Quit = "quit";
+	const FName NewGameLevelName = FName("GameMain");
+	const FString Quit = TEXT("quit");
 
 public:
 	UPROPERTY(meta = (BindWidget))

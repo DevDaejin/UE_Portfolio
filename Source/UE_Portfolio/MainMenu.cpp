@@ -44,28 +44,22 @@ void UMainMenu::NativeConstruct()
 
 bool UMainMenu::ValidatePlayerController()
 {
-	if (PlayerController)
-	{
-		return true;
-	}
-	else
+	if (!PlayerController)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Player controller is null"));
 		return false;
 	}
+	return true;
 }
 
 bool UMainMenu::ValidateButton(UButton* Button, const FString& ButtonName)
 {
-	if (Button)
-	{
-		return true;
-	}
-	else
+	if (!Button)
 	{
 		UE_LOG(LogTemp, Error, TEXT("%s is null"), *ButtonName);
 		return false;
 	}
+	return true;
 }
 
 void UMainMenu::OnMenuNewButtonClicked()

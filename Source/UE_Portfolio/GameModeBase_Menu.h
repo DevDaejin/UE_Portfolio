@@ -20,6 +20,6 @@ public:
 	TSubclassOf<UUserWidget> MenuWidget;
 
 private:
-	const FString MenuName = "Menu";
-	const FString MainName = "GameMain";
+	const FString MenuName = TEXT("Menu");
+	const FString MainName = TEXT("GameMain");
 };

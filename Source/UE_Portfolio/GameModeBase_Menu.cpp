@@ -18,22 +18,23 @@ void AGameModeBase_Menu::BeginPlay()
 
 			CreatedWidget->AddToViewport();
 
-			if (CurrentLevelName == MenuName)
+			if (CurrentLevelName.StartsWith(MenuName))
 			{
 				CreatedWidget->SetGroupVisibility(EVisibleType::MenuGroup);
 			}
-			if (CurrentLevelName == MainName)
+			if (CurrentLevelName.StartsWith(MainName))
 			{
 				CreatedWidget->SetGroupVisibility(EVisibleType::None);
 			}
 		}
 		else
 		{
-			UE_LOG(LogTemp, Error, TEXT("Widget is null"));
+			UE_LOG(LogTemp, Error, TEXT("Widget creation failed."));
+
 		}
 	}
 	else
 	{ 
-		UE_LOG(LogTemp, Error, TEXT("Menu widget is null"));
+		UE_LOG(LogTemp, Error, TEXT("MenuWidget class is not set."));
 	}
 }
