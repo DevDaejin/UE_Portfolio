@@ -22,15 +22,15 @@ void AGameModeBase_Menu::BeginPlay()
 			{
 				CreatedWidget->SetGroupVisibility(EVisibleType::MenuGroup);
 			}
-			if (CurrentLevelName.StartsWith(MainName))
+			else
 			{
 				CreatedWidget->SetGroupVisibility(EVisibleType::None);
 			}
+
 		}
 		else
 		{
 			UE_LOG(LogTemp, Error, TEXT("Widget creation failed."));
-
 		}
 	}
 	else
