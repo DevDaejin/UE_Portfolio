@@ -1,25 +1,23 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "HeroPawn.h"
 #include "Kismet/GameplayStatics.h"
-#include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "GameFramework/Controller.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
-// Sets default values
 AHeroPawn::AHeroPawn()
 {
-	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 }
 
-// Called when the game starts or when spawned
 void AHeroPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
 	SpringArm = FindComponentByClass<USpringArmComponent>();
 	Camera = FindComponentByClass<UCameraComponent>();
+	AnimInstance = GetMesh()->GetAnimInstance();
 
 	APlayerController* PlayerController = Cast<APlayerController>(Controller);
 	
@@ -37,41 +35,35 @@ void AHeroPawn::BeginPlay()
 			{
 				Subsystem->AddMappingContext(CommonMappingContext, 0);
 			}
-			else
-			{
-				UE_LOG(LogTemp, Display, TEXT("Subsystem is nullptr"));
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("LocalPlayer is nullptr"));
 		}
 	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("PlayerController is nullptr"));
-	}
+
+	CurrentHP = MaxHP;
+	CurrentStamina = MaxStamina;
 }
 
 void AHeroPawn::Jump()
 {
-	if (CurrentJumpCount == 0)
+	if (!bLockMovement)
 	{
-		Super::Jump();
-	}
-	else if (CurrentJumpCount == 1)
-	{
-		FVector Direction = GetActorUpVector();
-		LaunchCharacter(Direction * SecondJumpForce, false, true);
-	}
-	else
-		return;
+		if (CurrentJumpCount == 0 && CurrentStamina >= JumpStaminaCost)
+		{
+			LostStamina(JumpStaminaCost);
 
-	CurrentJumpCount++;
-}
-void AHeroPawn::StopJumping()
-{
-	Super::StopJumping();
+			Super::Jump();
+		}
+		else if (CurrentJumpCount == 1 && CurrentStamina >= JumpStaminaCost)
+		{
+			LostStamina(JumpStaminaCost);
+
+			FVector Direction = GetActorUpVector();
+			LaunchCharacter(Direction * SecondJumpForce, false, true);
+		}
+		else
+			return;
+
+		CurrentJumpCount++;
+	}
 }
 
 void AHeroPawn::Landed(const FHitResult& Hit)
@@ -80,60 +72,156 @@ void AHeroPawn::Landed(const FHitResult& Hit)
 	CurrentJumpCount = 0;
 }
 
+float AHeroPawn::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	const float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	if (Damage > 0.f)
+	{
+		LostHP(Damage);
+	}
+	return 0.0f;
+}
+
+void AHeroPawn::LostHP(float amount)
+{
+	CurrentHP -= amount;
+
+	if (CurrentHP <= 0.f)
+	{
+		Death();
+	}
+}
+
+void AHeroPawn::EarnHP(float amount)
+{
+	CurrentHP += amount;
+
+	if (CurrentHP > MaxHP)
+	{
+		CurrentHP = MaxHP;
+	}
+}
+
+void AHeroPawn::LostStamina(float amount)
+{
+	CurrentStamina -= amount;
+	
+	if (CurrentStamina < 0)
+	{
+		CurrentStamina = 0;
+	}
+
+	bChargeStamina = false;
+	GetWorld()->GetTimerManager().SetTimer(StaminaChargeTimeHandle, this, &AHeroPawn::ChargeStamina, RechargeTime);
+}
+
+void AHeroPawn::EarnStamina(float amount)
+{
+	CurrentStamina += amount;
+
+	if (CurrentStamina > MaxStamina)
+	{
+		CurrentStamina = MaxStamina;
+	}
+}
+
+void AHeroPawn::Death()
+{
+	USkeletalMeshComponent* MeshComponent = GetMesh();
+
+	if (MeshComponent)
+	{
+		MeshComponent->SetCollisionProfileName(TEXT("Ragdoll"));
+		MeshComponent->SetSimulatePhysics(true);
+		MeshComponent->SetAllBodiesSimulatePhysics(true);
+		MeshComponent->WakeAllRigidBodies();
+
+		UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+		if (MovementComponent)
+		{
+			MovementComponent->StopMovementImmediately();
+			MovementComponent->DisableMovement();
+			MovementComponent->SetComponentTickEnabled(false);
+		}
+	}
+}
+
 void AHeroPawn::Dash()
 {
-	if (bCanDash)
+	if (!bLockMovement && bCanDash)
 	{
-		FVector Direction = GetActorForwardVector();
-		LaunchCharacter(Direction * DashSpeed, true, true);
-		CurrentDashCount++;
+		FVector Direction = MoveDirection;
 
-		if (CurrentDashCount < MaxDashCount && bCanDash)
-		{
-			bCanDash = false;
-			GetWorld()->GetTimerManager().SetTimer(DashCooldownTimerHandle, this, &AHeroPawn::ResetDashCooldown, DashCooldown);
-		}
+		if (Direction.X == 0 && Direction.Y == 0)
+			Direction = GetActorForwardVector();
 
-		GetWorld()->GetTimerManager().SetTimer(DashTimerHanlde, this, &AHeroPawn::ResetDash, DashDuriation);
+		LaunchCharacter(GetActorForwardVector() * DashSpeed, true, true);
+
+		LostStamina(DashStaminaCost);
+		
+		GetWorld()->GetTimerManager().SetTimer(DashCoolTimerHandle, this, &AHeroPawn::ResetDashCoolTime, DashCoolTime);
+
+		UE_LOG(LogTemp, Display, TEXT("대쉬 무적 설정"));
+		GetWorld()->GetTimerManager().SetTimer(DashInvicibleTimerHanlde, this, &AHeroPawn::ResetDashInvicible, DashInvincibleTime);
+
+		bCanDash = false;
 	}
 }
 
-void AHeroPawn::ResetDash()
+void AHeroPawn::ChargeStamina()
 {
-	CurrentDashCount = 0;
-
-	if (!bCanDash)
-	{
-		GetWorld()->GetTimerManager().ClearTimer(DashCooldownTimerHandle);
-		bCanDash = true;
-	}
+	bChargeStamina = true;
 }
 
-void AHeroPawn::ResetDashCooldown()
+void AHeroPawn::ResetDashInvicible()
+{
+	UE_LOG(LogTemp, Display, TEXT("대쉬 무적 해제"));
+}
+
+void AHeroPawn::ResetDashCoolTime()
 {
 	bCanDash = true;
 }
 
+void AHeroPawn::Attack()
+{
+	if (AnimInstance && AttackMontage)
+	{
+		bLockMovement = true;
+		AnimInstance->Montage_Play(AttackMontage, 1.f);
+
+		GetWorld()->GetTimerManager().SetTimer(LockMovementTimerHandle, this, &AHeroPawn::ReleaseMovement, AttackMontage->GetPlayLength());
+	}
+}
+
+void AHeroPawn::ReleaseMovement()
+{
+	bLockMovement = false;
+}
+
 void AHeroPawn::Move(const FInputActionInstance& Instance)
 {
-	MoveDirection = Instance.GetValue().Get<FVector2D>().GetSafeNormal();
-
-	if (Controller)
+	if (!bLockMovement)
 	{
-		FRotator CameraRotator = SpringArm->GetRelativeRotation();
-		CameraRotator.Pitch = 0;
-		CameraRotator.Roll = 0;
+		MoveDirection = FVector(Instance.GetValue().Get<FVector2D>().GetSafeNormal().X, Instance.GetValue().Get<FVector2D>().GetSafeNormal().Y, 0);
 
-		FVector ForwardDirection = FRotationMatrix(CameraRotator).GetUnitAxis(EAxis::X);
-		FVector RightDirection = FRotationMatrix(CameraRotator).GetUnitAxis(EAxis::Y);
-		FVector Direction = ForwardDirection * MoveDirection.Y + RightDirection * MoveDirection.X;
-		if (!Direction.IsNearlyZero())
+		if (Controller)
 		{
-			FRotator CalculatedRotation = FMath::RInterpTo(Controller->GetControlRotation(), Direction.Rotation(), UGameplayStatics::GetWorldDeltaSeconds(this), RotateSpeed);
-			Controller->SetControlRotation(CalculatedRotation);
-		}
+			FRotator CameraRotator = SpringArm->GetRelativeRotation();
+			CameraRotator.Pitch = 0;
+			CameraRotator.Roll = 0;
 
-		AddMovementInput(Direction.GetSafeNormal(), 1);
+			FVector ForwardDirection = FRotationMatrix(CameraRotator).GetUnitAxis(EAxis::X);
+			FVector RightDirection = FRotationMatrix(CameraRotator).GetUnitAxis(EAxis::Y);
+			FVector Direction = ForwardDirection * MoveDirection.Y + RightDirection * MoveDirection.X;
+			if (!Direction.IsNearlyZero())
+			{
+				FRotator CalculatedRotation = FMath::RInterpTo(Controller->GetControlRotation(), Direction.Rotation(), UGameplayStatics::GetWorldDeltaSeconds(this), RotateSpeed);
+				Controller->SetControlRotation(CalculatedRotation);
+			}
+
+			AddMovementInput(Direction.GetSafeNormal(), 1);
+		}
 	}
 }
 
@@ -154,6 +242,11 @@ void AHeroPawn::Look(const FInputActionInstance& Instance)
 void AHeroPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (bChargeStamina && bCanDash)
+	{
+		EarnStamina(StaminaChargeAmount * DeltaTime);
+	}
 }
 
 // Called to bind functionality to input
@@ -169,6 +262,6 @@ void AHeroPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 		Input->BindAction(IA_Dash, ETriggerEvent::Started, this, &AHeroPawn::Dash);
 		Input->BindAction(IA_Movement, ETriggerEvent::Triggered, this, &AHeroPawn::Move);
 		Input->BindAction(IA_Looking, ETriggerEvent::Triggered, this, &AHeroPawn::Look);
+		Input->BindAction(IA_Attack, ETriggerEvent::Started, this, &AHeroPawn::Attack);
 	}
 }
-
