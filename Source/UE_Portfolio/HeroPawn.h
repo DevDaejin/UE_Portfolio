@@ -108,7 +108,7 @@ protected:
 	float DashStaminaCost = 10;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
-	float DashSpeed = 600.f;
+	float DashSpeed = 3000.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
 	float DashCoolTime = 2.f;

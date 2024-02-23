@@ -150,12 +150,12 @@ void AHeroPawn::Dash()
 {
 	if (!bLockMovement && bCanDash)
 	{
-		FVector Direction = MoveDirection;
+		FVector Direction = Controller->GetPawn()->GetActorForwardVector();
+		LaunchCharacter(Direction * DashSpeed, true, true);
+		AnimInstance->Montage_Play(DashMontage, DashMontage->GetPlayLength());
 
-		if (Direction.X == 0 && Direction.Y == 0)
-			Direction = GetActorForwardVector();
-
-		LaunchCharacter(GetActorForwardVector() * DashSpeed, true, true);
+		bLockMovement = true;
+		GetWorld()->GetTimerManager().SetTimer(LockMovementTimerHandle, this, &AHeroPawn::ReleaseMovement, DashMontage->GetPlayLength() * 0.8f);
 
 		LostStamina(DashStaminaCost);
 		
