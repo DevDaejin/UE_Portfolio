@@ -5,6 +5,9 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Engine/SkeletalMeshSocket.h"
+#include "Weapon.h"
+#include "DrawDebugHelpers.h"
 
 AHeroPawn::AHeroPawn()
 {
@@ -19,27 +22,12 @@ void AHeroPawn::BeginPlay()
 	Camera = FindComponentByClass<UCameraComponent>();
 	AnimInstance = GetMesh()->GetAnimInstance();
 
-	APlayerController* PlayerController = Cast<APlayerController>(Controller);
-	
-	if (PlayerController)
-	{
-		PlayerController->bShowMouseCursor = false;
-
-		ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
-		if (LocalPlayer)
-		{
-			UEnhancedInputLocalPlayerSubsystem* Subsystem =
-				LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
-
-			if (Subsystem)
-			{
-				Subsystem->AddMappingContext(CommonMappingContext, 0);
-			}
-		}
-	}
+	SetInputSubsystem();
+	Arm();
 
 	CurrentHP = MaxHP;
 	CurrentStamina = MaxStamina;
+
 }
 
 void AHeroPawn::Jump()
@@ -105,7 +93,7 @@ void AHeroPawn::EarnHP(float amount)
 void AHeroPawn::LostStamina(float amount)
 {
 	CurrentStamina -= amount;
-	
+
 	if (CurrentStamina < 0)
 	{
 		CurrentStamina = 0;
@@ -152,13 +140,14 @@ void AHeroPawn::Dash()
 	{
 		FVector Direction = Controller->GetPawn()->GetActorForwardVector();
 		LaunchCharacter(Direction * DashSpeed, true, true);
+
 		AnimInstance->Montage_Play(DashMontage, DashMontage->GetPlayLength());
 
 		bLockMovement = true;
 		GetWorld()->GetTimerManager().SetTimer(LockMovementTimerHandle, this, &AHeroPawn::ReleaseMovement, DashMontage->GetPlayLength() * 0.8f);
 
 		LostStamina(DashStaminaCost);
-		
+
 		GetWorld()->GetTimerManager().SetTimer(DashCoolTimerHandle, this, &AHeroPawn::ResetDashCoolTime, DashCoolTime);
 
 		UE_LOG(LogTemp, Display, TEXT("대쉬 무적 설정"));
@@ -185,7 +174,8 @@ void AHeroPawn::ResetDashCoolTime()
 
 void AHeroPawn::Attack()
 {
-	if (AnimInstance && AttackMontage)
+	//조건 확인 후 애니메이션 재생
+	if (AnimInstance && AttackMontage && !bLockMovement)
 	{
 		bLockMovement = true;
 		AnimInstance->Montage_Play(AttackMontage, 1.f);
@@ -194,9 +184,55 @@ void AHeroPawn::Attack()
 	}
 }
 
+void AHeroPawn::CheckWeaponCollision()
+{
+	if (Weapon)
+	{
+		FVector Start = Weapon->MeshComponent->GetSocketLocation("StartPoint");
+		FVector End = Weapon->MeshComponent->GetSocketLocation("EndPoint");
+
+		FHitResult HitResult;
+		FCollisionQueryParams Params;
+
+		Params.AddIgnoredActor(this);
+		Params.AddIgnoredActor(Weapon);
+
+		bool bHit = HitResult.bBlockingHit;
+		FColor LineColor = bHit ? FColor::Green : FColor::Red;
+		float LineTime = 2.0f;
+		DrawDebugLine(GetWorld(), Start, End, LineColor, false, LineTime);
+
+		if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_GameTraceChannel11, Params))
+		{
+			AActor* HitActor = HitResult.GetActor();
+			if (HitActor != nullptr)
+			{
+				HitActor->SetActorHiddenInGame(true);
+				HitActor->SetActorEnableCollision(false);
+			}
+		}
+	}
+}
+
 void AHeroPawn::ReleaseMovement()
 {
 	bLockMovement = false;
+}
+
+void AHeroPawn::Arm()
+{
+	if (WeaponSubclass)
+	{
+		FActorSpawnParameters Params;
+		Params.Owner = this;
+		Params.Instigator = GetInstigator();
+		Weapon = GetWorld()->SpawnActor<AWeapon>(WeaponSubclass, FTransform::Identity, Params);
+
+		if (Weapon)
+		{
+			Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("weapon_r_muzzle"));
+		}
+	}
 }
 
 void AHeroPawn::Move(const FInputActionInstance& Instance)
@@ -238,7 +274,28 @@ void AHeroPawn::Look(const FInputActionInstance& Instance)
 	SpringArm->SetWorldRotation(CalculatedSpringArmRotation);
 }
 
-// Called every frame
+void AHeroPawn::SetInputSubsystem()
+{
+	APlayerController* PlayerController = Cast<APlayerController>(Controller);
+
+	if (PlayerController)
+	{
+		PlayerController->bShowMouseCursor = false;
+
+		ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
+		if (LocalPlayer)
+		{
+			UEnhancedInputLocalPlayerSubsystem* Subsystem =
+				LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
+
+			if (Subsystem)
+			{
+				Subsystem->AddMappingContext(CommonMappingContext, 0);
+			}
+		}
+	}
+}
+
 void AHeroPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -247,9 +304,13 @@ void AHeroPawn::Tick(float DeltaTime)
 	{
 		EarnStamina(StaminaChargeAmount * DeltaTime);
 	}
+
+	if (bIsAttacking)
+	{
+		CheckWeaponCollision();
+	}
 }
 
-// Called to bind functionality to input
 void AHeroPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);

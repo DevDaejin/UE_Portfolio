@@ -6,6 +6,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "HeroPawn.generated.h"
 
+class AWeapon;
 class USpringArmComponent;
 class UCameraComponent;
 
@@ -18,6 +19,8 @@ public:
 	AHeroPawn();
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	bool bIsAttacking;
 
 protected:
 
@@ -35,22 +38,24 @@ protected:
 	void ChargeStamina();
 	void ResetDashInvicible();
 	void ResetDashCoolTime();
-	void Attack();
 	void ReleaseMovement();
+	void Arm();
 	void Move(const FInputActionInstance& Instance);
 	void Look(const FInputActionInstance& Instance);
+	void Attack();
+	void CheckWeaponCollision();
 
 	//Input
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Input")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputMappingContext* CommonMappingContext;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Input")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* IA_Jump;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Input")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* IA_Dash;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Input")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* IA_Movement;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
@@ -58,7 +63,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* IA_Attack;
-	
+
 	//Animation
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
 	UAnimMontage* DashMontage;
@@ -125,11 +130,18 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
 	bool bLockMovement = false;
 
+	//ETC
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ETC")
+	TSubclassOf<AWeapon> WeaponSubclass;
+	AWeapon* Weapon;
+
 private:
+	void SetInputSubsystem();
+
 	UPROPERTY(VisibleAnywhere, Category = "Status")
 	int32 CurrentJumpCount = 0;
 
-	FVector MoveDirection;	
+	FVector MoveDirection;
 	FTimerHandle StaminaChargeTimeHandle;
 	FTimerHandle DashCoolTimerHandle;
 	FTimerHandle DashInvicibleTimerHanlde;
