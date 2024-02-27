@@ -9,6 +9,7 @@
 class AWeapon;
 class USpringArmComponent;
 class UCameraComponent;
+class UHealthComponent;
 
 UCLASS()
 class UE_PORTFOLIO_API AHeroPawn : public ACharacter
@@ -21,6 +22,8 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	bool bIsAttacking;
+
+	UHealthComponent* HealthComponent;
 
 protected:
 
@@ -70,13 +73,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
 	UAnimMontage* AttackMontage;
-
-	//Stats
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
-	int32 MaxHP = 100;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Stat")
-	int32 CurrentHP = 100;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
 	float MaxStamina = 100;

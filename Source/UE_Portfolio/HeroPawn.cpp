@@ -8,6 +8,7 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Weapon.h"
 #include "DrawDebugHelpers.h"
+#include "HealthComponent.h"
 
 AHeroPawn::AHeroPawn()
 {
@@ -18,6 +19,7 @@ void AHeroPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
+	HealthComponent = FindComponentByClass<UHealthComponent>();
 	SpringArm = FindComponentByClass<USpringArmComponent>();
 	Camera = FindComponentByClass<UCameraComponent>();
 	AnimInstance = GetMesh()->GetAnimInstance();
@@ -25,9 +27,7 @@ void AHeroPawn::BeginPlay()
 	SetInputSubsystem();
 	Arm();
 
-	CurrentHP = MaxHP;
 	CurrentStamina = MaxStamina;
-
 }
 
 void AHeroPawn::Jump()
@@ -66,28 +66,13 @@ float AHeroPawn::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 	if (Damage > 0.f)
 	{
 		LostHP(Damage);
+
+		if (HealthComponent && HealthComponent->GetCurrentHP() == 0)
+		{
+			Death();
+		}
 	}
 	return 0.0f;
-}
-
-void AHeroPawn::LostHP(float amount)
-{
-	CurrentHP -= amount;
-
-	if (CurrentHP <= 0.f)
-	{
-		Death();
-	}
-}
-
-void AHeroPawn::EarnHP(float amount)
-{
-	CurrentHP += amount;
-
-	if (CurrentHP > MaxHP)
-	{
-		CurrentHP = MaxHP;
-	}
 }
 
 void AHeroPawn::LostStamina(float amount)
@@ -139,7 +124,7 @@ void AHeroPawn::Dash()
 	if (!bLockMovement && bCanDash)
 	{
 		FVector Direction = Controller->GetPawn()->GetActorForwardVector();
-		LaunchCharacter(Direction * DashSpeed, true, true);
+		//LaunchCharacter(Direction * DashSpeed, true, true);
 
 		AnimInstance->Montage_Play(DashMontage, DashMontage->GetPlayLength());
 
