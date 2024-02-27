@@ -32,8 +32,6 @@ protected:
 	virtual void Landed(const FHitResult& Hit) override;
 	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
-	void LostHP(float amount);
-	void EarnHP(float amount);
 	void LostStamina(float amount);
 	void EarnStamina(float amount);
 	void Death();
