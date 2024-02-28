@@ -106,17 +106,19 @@ void AHeroPawn::Attack()
 	if (AttackComponent && 
 		!bLockMovement && 
 		CurrentJumpCount == 0 &&
-		CurrentStamina <= JumpStaminaCost)
+		CurrentStamina >= AttackStaminaCost)
 	{
 		bLockMovement = true;
-		LostStamina(JumpStaminaCost);
+		LostStamina(AttackStaminaCost);
 		AttackComponent->Attack();
 	}
 }
 
 void AHeroPawn::Dash()
 {
-	if (!bLockMovement && CurrentStamina <= DashStaminaCost)
+	if (!bLockMovement && 
+		CurrentJumpCount == 0 &&
+		CurrentStamina >= DashStaminaCost)
 	{
 		bLockMovement = true;
 		LostStamina(DashStaminaCost);

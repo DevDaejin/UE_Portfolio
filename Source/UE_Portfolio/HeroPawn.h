@@ -103,6 +103,9 @@ protected:
 	float SecondJumpForce = 600.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
+	float AttackStaminaCost = 10;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
 	float JumpStaminaCost = 10;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
