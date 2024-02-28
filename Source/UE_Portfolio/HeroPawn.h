@@ -9,8 +9,6 @@
 
 class USpringArmComponent;
 class UCameraComponent;
-class UHealthComponent;
-class UAttackComponent;
 
 UCLASS()
 class UE_PORTFOLIO_API AHeroPawn : public ACharacterBase
@@ -21,9 +19,6 @@ public:
 	AHeroPawn();
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	
-	UHealthComponent* HealthComponent;
-	UAttackComponent* AttackComponent;
 
 	//Animation
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
@@ -46,7 +41,6 @@ protected:
 	virtual void Jump() override;
 	virtual void Landed(const FHitResult& Hit) override;
 	virtual void Attack() override;
-	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 	void LostStamina(float amount);
 	void EarnStamina(float amount);

@@ -24,6 +24,8 @@ public:
 	void CheckWeaponCollision();
 	bool bIsAttacking;
 
+
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
 	UAnimMontage* AttackMontage;
 

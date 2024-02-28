@@ -1,4 +1,6 @@
 #include "HeroPawn.h"
+#include "HealthComponent.h"
+#include "AttackComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -18,8 +20,6 @@ void AHeroPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
-	HealthComponent = FindComponentByClass<UHealthComponent>();
-	AttackComponent = FindComponentByClass<UAttackComponent>();
 	SpringArm = FindComponentByClass<USpringArmComponent>();
 	Camera = FindComponentByClass<UCameraComponent>();
 	AnimInstance = GetMesh()->GetAnimInstance();
@@ -59,21 +59,6 @@ void AHeroPawn::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
 	CurrentJumpCount = 0;
-}
-
-float AHeroPawn::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
-{
-	const float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-	if (Damage > 0.f)
-	{
-		HealthComponent->LostHP(Damage);
-
-		if (HealthComponent && HealthComponent->GetCurrentHP() == 0)
-		{
-			Death();
-		}
-	}
-	return 0.0f;
 }
 
 void AHeroPawn::LostStamina(float amount)

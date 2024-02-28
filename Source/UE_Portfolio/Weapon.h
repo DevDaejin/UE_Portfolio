@@ -20,7 +20,9 @@ public:
 	UPROPERTY()
 	USkeletalMeshComponent* MeshComponent;
 
+	UPROPERTY()
+	float WeaponDamage;
+
 protected:
 	virtual void BeginPlay() override;
-	float WeaponDamage;
 };

@@ -1,6 +1,11 @@
 #include "AttackComponent.h"
 #include "GameFramework/Character.h"
 #include "Weapon.h"
+#include "HeroPawn.h"
+#include "CharacterBase.h"
+#include "HealthComponent.h"
+#include "GameFramework/DamageType.h"
+
 
 UAttackComponent::UAttackComponent()
 {
@@ -78,11 +83,13 @@ void UAttackComponent::CheckWeaponCollision()
 
 		if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_GameTraceChannel11, Params))
 		{
-			AActor* HitActor = HitResult.GetActor();
-			if (HitActor != nullptr)
+			ACharacterBase* CharacterBase = Cast<ACharacterBase>(HitResult.GetActor()->GetComponentByClass(ACharacterBase::StaticClass()));
+			if (CharacterBase != nullptr)
 			{
-				HitActor->SetActorHiddenInGame(true);
-				HitActor->SetActorEnableCollision(false);
+				////TODO : StatComponent도 만들어서 추가하면 될 듯
+				//int32 Damage = Weapon->WeaponDamage;
+				//APawn* Pawn = Cast<APawn>(GetOwner());
+				//CharacterBase->TakeDamage(Damage, FDamageEvent(UDamageType::StaticClass()), Pawn->GetInstigator(), this);
 			}
 		}
 	}
