@@ -1,6 +1,7 @@
 #include "AttackAnimNotifyState.h"
 #include "Engine.h"
 #include "HeroPawn.h"
+#include "AttackComponent.h"
 
 void UAttackAnimNotifyState::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference)
 {
@@ -8,14 +9,14 @@ void UAttackAnimNotifyState::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnim
 	
 	if (AHeroPawn* Hero = Cast<AHeroPawn>(MeshComp->GetOwner()))
 	{
-		Hero->bIsAttacking = true;
+		Hero->AttackComponent->bIsAttacking = true;
 	}
 }
 
-void UAttackAnimNotifyState::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float FrameDeltaTime, const FAnimNotifyEventReference& EventReference)
-{
-	Super::NotifyTick(MeshComp, Animation, FrameDeltaTime, EventReference);
-}
+//void UAttackAnimNotifyState::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float FrameDeltaTime, const FAnimNotifyEventReference& EventReference)
+//{
+//	Super::NotifyTick(MeshComp, Animation, FrameDeltaTime, EventReference);
+//}
 
 void UAttackAnimNotifyState::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
 {
@@ -23,6 +24,6 @@ void UAttackAnimNotifyState::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSe
 
 	if (AHeroPawn* Hero = Cast<AHeroPawn>(MeshComp->GetOwner()))
 	{
-		Hero->bIsAttacking = false;
+		Hero->AttackComponent->bIsAttacking = false;
 	}
 }

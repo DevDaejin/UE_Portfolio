@@ -4,11 +4,10 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
 #include "Engine/SkeletalMeshSocket.h"
-#include "Weapon.h"
 #include "DrawDebugHelpers.h"
 #include "HealthComponent.h"
+#include "AttackComponent.h"
 
 AHeroPawn::AHeroPawn()
 {
@@ -20,12 +19,12 @@ void AHeroPawn::BeginPlay()
 	Super::BeginPlay();
 
 	HealthComponent = FindComponentByClass<UHealthComponent>();
+	AttackComponent = FindComponentByClass<UAttackComponent>();
 	SpringArm = FindComponentByClass<USpringArmComponent>();
 	Camera = FindComponentByClass<UCameraComponent>();
 	AnimInstance = GetMesh()->GetAnimInstance();
 
 	SetInputSubsystem();
-	Arm();
 
 	CurrentStamina = MaxStamina;
 }
@@ -48,7 +47,9 @@ void AHeroPawn::Jump()
 			LaunchCharacter(Direction * SecondJumpForce, false, true);
 		}
 		else
+		{
 			return;
+		}
 
 		CurrentJumpCount++;
 	}
@@ -98,47 +99,29 @@ void AHeroPawn::EarnStamina(float amount)
 	}
 }
 
-void AHeroPawn::Death()
+void AHeroPawn::Attack()
 {
-	USkeletalMeshComponent* MeshComponent = GetMesh();
+	Super::Attack();
 
-	if (MeshComponent)
+	if (AttackComponent && 
+		!bLockMovement && 
+		CurrentJumpCount == 0 &&
+		CurrentStamina <= JumpStaminaCost)
 	{
-		MeshComponent->SetCollisionProfileName(TEXT("Ragdoll"));
-		MeshComponent->SetSimulatePhysics(true);
-		MeshComponent->SetAllBodiesSimulatePhysics(true);
-		MeshComponent->WakeAllRigidBodies();
-
-		UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
-		if (MovementComponent)
-		{
-			MovementComponent->StopMovementImmediately();
-			MovementComponent->DisableMovement();
-			MovementComponent->SetComponentTickEnabled(false);
-		}
+		bLockMovement = true;
+		LostStamina(JumpStaminaCost);
+		AttackComponent->Attack();
 	}
 }
 
 void AHeroPawn::Dash()
 {
-	if (!bLockMovement && bCanDash)
+	if (!bLockMovement && CurrentStamina <= DashStaminaCost)
 	{
-		FVector Direction = Controller->GetPawn()->GetActorForwardVector();
-		//LaunchCharacter(Direction * DashSpeed, true, true);
-
-		AnimInstance->Montage_Play(DashMontage, DashMontage->GetPlayLength());
-
 		bLockMovement = true;
-		GetWorld()->GetTimerManager().SetTimer(LockMovementTimerHandle, this, &AHeroPawn::ReleaseMovement, DashMontage->GetPlayLength() * 0.8f);
-
 		LostStamina(DashStaminaCost);
-
-		GetWorld()->GetTimerManager().SetTimer(DashCoolTimerHandle, this, &AHeroPawn::ResetDashCoolTime, DashCoolTime);
-
-		UE_LOG(LogTemp, Display, TEXT("대쉬 무적 설정"));
-		GetWorld()->GetTimerManager().SetTimer(DashInvicibleTimerHanlde, this, &AHeroPawn::ResetDashInvicible, DashInvincibleTime);
-
-		bCanDash = false;
+		FVector Direction = Controller->GetPawn()->GetActorForwardVector();
+		AnimInstance->Montage_Play(DashMontage, DashMontage->GetPlayLength());
 	}
 }
 
@@ -147,102 +130,26 @@ void AHeroPawn::ChargeStamina()
 	bChargeStamina = true;
 }
 
-void AHeroPawn::ResetDashInvicible()
-{
-	UE_LOG(LogTemp, Display, TEXT("대쉬 무적 해제"));
-}
-
-void AHeroPawn::ResetDashCoolTime()
-{
-	bCanDash = true;
-}
-
-void AHeroPawn::Attack()
-{
-	//조건 확인 후 애니메이션 재생
-	if (AnimInstance && AttackMontage && !bLockMovement)
-	{
-		bLockMovement = true;
-		AnimInstance->Montage_Play(AttackMontage, 1.f);
-
-		GetWorld()->GetTimerManager().SetTimer(LockMovementTimerHandle, this, &AHeroPawn::ReleaseMovement, AttackMontage->GetPlayLength());
-	}
-}
-
-void AHeroPawn::CheckWeaponCollision()
-{
-	if (Weapon)
-	{
-		FVector Start = Weapon->MeshComponent->GetSocketLocation("StartPoint");
-		FVector End = Weapon->MeshComponent->GetSocketLocation("EndPoint");
-
-		FHitResult HitResult;
-		FCollisionQueryParams Params;
-
-		Params.AddIgnoredActor(this);
-		Params.AddIgnoredActor(Weapon);
-
-		bool bHit = HitResult.bBlockingHit;
-		FColor LineColor = bHit ? FColor::Green : FColor::Red;
-		float LineTime = 2.0f;
-		DrawDebugLine(GetWorld(), Start, End, LineColor, false, LineTime);
-
-		if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_GameTraceChannel11, Params))
-		{
-			AActor* HitActor = HitResult.GetActor();
-			if (HitActor != nullptr)
-			{
-				HitActor->SetActorHiddenInGame(true);
-				HitActor->SetActorEnableCollision(false);
-			}
-		}
-	}
-}
-
-void AHeroPawn::ReleaseMovement()
-{
-	bLockMovement = false;
-}
-
-void AHeroPawn::Arm()
-{
-	if (WeaponSubclass)
-	{
-		FActorSpawnParameters Params;
-		Params.Owner = this;
-		Params.Instigator = GetInstigator();
-		Weapon = GetWorld()->SpawnActor<AWeapon>(WeaponSubclass, FTransform::Identity, Params);
-
-		if (Weapon)
-		{
-			Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("weapon_r_muzzle"));
-		}
-	}
-}
-
 void AHeroPawn::Move(const FInputActionInstance& Instance)
 {
-	if (!bLockMovement)
+	MoveDirection = FVector(Instance.GetValue().Get<FVector2D>().GetSafeNormal().X, Instance.GetValue().Get<FVector2D>().GetSafeNormal().Y, 0);
+
+	if (!bLockMovement && Controller)
 	{
-		MoveDirection = FVector(Instance.GetValue().Get<FVector2D>().GetSafeNormal().X, Instance.GetValue().Get<FVector2D>().GetSafeNormal().Y, 0);
+		FRotator CameraRotator = SpringArm->GetRelativeRotation();
+		CameraRotator.Pitch = 0;
+		CameraRotator.Roll = 0;
 
-		if (Controller)
+		FVector ForwardDirection = FRotationMatrix(CameraRotator).GetUnitAxis(EAxis::X);
+		FVector RightDirection = FRotationMatrix(CameraRotator).GetUnitAxis(EAxis::Y);
+		FVector Direction = ForwardDirection * MoveDirection.Y + RightDirection * MoveDirection.X;
+		if (!Direction.IsNearlyZero())
 		{
-			FRotator CameraRotator = SpringArm->GetRelativeRotation();
-			CameraRotator.Pitch = 0;
-			CameraRotator.Roll = 0;
-
-			FVector ForwardDirection = FRotationMatrix(CameraRotator).GetUnitAxis(EAxis::X);
-			FVector RightDirection = FRotationMatrix(CameraRotator).GetUnitAxis(EAxis::Y);
-			FVector Direction = ForwardDirection * MoveDirection.Y + RightDirection * MoveDirection.X;
-			if (!Direction.IsNearlyZero())
-			{
-				FRotator CalculatedRotation = FMath::RInterpTo(Controller->GetControlRotation(), Direction.Rotation(), UGameplayStatics::GetWorldDeltaSeconds(this), RotateSpeed);
-				Controller->SetControlRotation(CalculatedRotation);
-			}
-
-			AddMovementInput(Direction.GetSafeNormal(), 1);
+			FRotator CalculatedRotation = FMath::RInterpTo(Controller->GetControlRotation(), Direction.Rotation(), UGameplayStatics::GetWorldDeltaSeconds(this), RotateSpeed);
+			Controller->SetControlRotation(CalculatedRotation);
 		}
+
+		AddMovementInput(Direction.GetSafeNormal(), 1);
 	}
 }
 
@@ -285,14 +192,9 @@ void AHeroPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (bChargeStamina && bCanDash)
+	if (bChargeStamina)
 	{
 		EarnStamina(StaminaChargeAmount * DeltaTime);
-	}
-
-	if (bIsAttacking)
-	{
-		CheckWeaponCollision();
 	}
 }
 

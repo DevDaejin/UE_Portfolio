@@ -4,15 +4,16 @@
 #include "GameFramework/Character.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "CharacterBase.h"
 #include "HeroPawn.generated.h"
 
-class AWeapon;
 class USpringArmComponent;
 class UCameraComponent;
 class UHealthComponent;
+class UAttackComponent;
 
 UCLASS()
-class UE_PORTFOLIO_API AHeroPawn : public ACharacter
+class UE_PORTFOLIO_API AHeroPawn : public ACharacterBase
 {
 	GENERATED_BODY()
 
@@ -20,31 +21,39 @@ public:
 	AHeroPawn();
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-	bool bIsAttacking;
-
+	
 	UHealthComponent* HealthComponent;
+	UAttackComponent* AttackComponent;
+
+	//Animation
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	UAnimMontage* DashMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
+	bool bLockMovement = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
+	float DashSpeed = 500.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
+	float InvincibleStartTime = 0.2f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
+	float InvincibleEndTime = 0.8f;
 
 protected:
-
 	virtual void BeginPlay() override;
 	virtual void Jump() override;
 	virtual void Landed(const FHitResult& Hit) override;
+	virtual void Attack() override;
 	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 	void LostStamina(float amount);
 	void EarnStamina(float amount);
-	void Death();
 	void Dash();
 	void ChargeStamina();
-	void ResetDashInvicible();
-	void ResetDashCoolTime();
-	void ReleaseMovement();
-	void Arm();
 	void Move(const FInputActionInstance& Instance);
 	void Look(const FInputActionInstance& Instance);
-	void Attack();
-	void CheckWeaponCollision();
 
 	//Input
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
@@ -64,13 +73,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* IA_Attack;
-
-	//Animation
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	UAnimMontage* DashMontage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	UAnimMontage* AttackMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
 	float MaxStamina = 100;
@@ -107,27 +109,7 @@ protected:
 	float DashStaminaCost = 10;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
-	float DashSpeed = 3000.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
-	float DashCoolTime = 2.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
-	float DashInvincibleTime = .5f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
-	bool bCanDash = true;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
 	bool bChargeStamina = true;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
-	bool bLockMovement = false;
-
-	//ETC
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ETC")
-	TSubclassOf<AWeapon> WeaponSubclass;
-	AWeapon* Weapon;
 
 private:
 	void SetInputSubsystem();
@@ -137,9 +119,6 @@ private:
 
 	FVector MoveDirection;
 	FTimerHandle StaminaChargeTimeHandle;
-	FTimerHandle DashCoolTimerHandle;
-	FTimerHandle DashInvicibleTimerHanlde;
-	FTimerHandle LockMovementTimerHandle;
 
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
 	float MinPitchAngle = -85;
