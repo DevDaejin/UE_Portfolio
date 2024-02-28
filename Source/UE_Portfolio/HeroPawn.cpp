@@ -65,7 +65,7 @@ float AHeroPawn::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 	const float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	if (Damage > 0.f)
 	{
-		LostHP(Damage);
+		HealthComponent->LostHP(Damage);
 
 		if (HealthComponent && HealthComponent->GetCurrentHP() == 0)
 		{
