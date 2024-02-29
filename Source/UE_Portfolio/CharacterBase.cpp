@@ -1,6 +1,7 @@
 #include "CharacterBase.h"
 #include "HealthComponent.h"
 #include "AttackComponent.h"
+#include "Engine/DamageEvents.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 ACharacterBase::ACharacterBase()
@@ -29,20 +30,31 @@ void ACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 float ACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-	const float Damage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-	if (Damage > 0.f)
+	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	if (DamageAmount > 0.f)
 	{
-		HealthComponent->LostHP(Damage);
+		UE_LOG(LogTemp, Display, TEXT("D %f"), DamageAmount);
+
+		HealthComponent->LostHP(DamageAmount);
 
 		if (HealthComponent && HealthComponent->GetCurrentHP() == 0)
 		{
-			Death();
+			FVector Impulse(0, 0, 0);
+			if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
+			{
+				FPointDamageEvent* PointDamageEvent = (FPointDamageEvent*)&DamageEvent;
+				Impulse = PointDamageEvent->ShotDirection;
+			}
+
+			UE_LOG(LogTemp, Display, TEXT("Impulse : %s"), *Impulse.ToString());
+
+			Death(Impulse);
 		}
 	}
 	return 0.0f;
 }
 
-void ACharacterBase::Death()
+void ACharacterBase::Death(FVector ForceDirection)
 {
 	USkeletalMeshComponent* MeshComponent = GetMesh();
 
@@ -52,6 +64,7 @@ void ACharacterBase::Death()
 		MeshComponent->SetSimulatePhysics(true);
 		MeshComponent->SetAllBodiesSimulatePhysics(true);
 		MeshComponent->WakeAllRigidBodies();
+		MeshComponent->AddImpulse(ForceDirection * 3000.f, TEXT("spine_05"), true);
 
 		UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
 		if (MovementComponent)

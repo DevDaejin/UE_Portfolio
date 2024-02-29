@@ -20,8 +20,8 @@ public:
 	UPROPERTY()
 	USkeletalMeshComponent* MeshComponent;
 
-	UPROPERTY()
-	float WeaponDamage;
+	UPROPERTY(EditAnywhere)
+	float WeaponDamage = 10;
 
 protected:
 	virtual void BeginPlay() override;

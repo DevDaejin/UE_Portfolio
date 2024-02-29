@@ -1,10 +1,13 @@
 #include "AttackComponent.h"
-#include "GameFramework/Character.h"
 #include "Weapon.h"
 #include "HeroPawn.h"
 #include "CharacterBase.h"
 #include "HealthComponent.h"
 #include "GameFramework/DamageType.h"
+#include "GameFramework/Character.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/DamageEvents.h"
+
 
 
 UAttackComponent::UAttackComponent()
@@ -52,6 +55,8 @@ void UAttackComponent::Attack()
 
 	if (Character)
 	{
+		Enemies.Empty();
+
 		UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
 		if (AnimInstance && AttackMontage && !bIsAttacking)
 		{
@@ -83,13 +88,17 @@ void UAttackComponent::CheckWeaponCollision()
 
 		if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_GameTraceChannel11, Params))
 		{
-			ACharacterBase* CharacterBase = Cast<ACharacterBase>(HitResult.GetActor()->GetComponentByClass(ACharacterBase::StaticClass()));
-			if (CharacterBase != nullptr)
+			ACharacterBase* CharacterBase = Cast<ACharacterBase>(HitResult.GetActor());
+			if (CharacterBase && !Enemies.Contains(CharacterBase))
 			{
-				////TODO : StatComponent도 만들어서 추가하면 될 듯
-				//int32 Damage = Weapon->WeaponDamage;
-				//APawn* Pawn = Cast<APawn>(GetOwner());
-				//CharacterBase->TakeDamage(Damage, FDamageEvent(UDamageType::StaticClass()), Pawn->GetInstigator(), this);
+				float Damage = Weapon->WeaponDamage;
+				FPointDamageEvent DamageEvent;
+				DamageEvent.HitInfo = HitResult;
+				DamageEvent.ShotDirection = (End - Start).GetSafeNormal();
+				DamageEvent.Damage = Damage;
+
+				CharacterBase->TakeDamage(Damage, DamageEvent, GetOwner()->GetInstigatorController(), Weapon);
+				Enemies.Add(CharacterBase);
 			}
 		}
 	}

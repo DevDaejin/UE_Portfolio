@@ -99,6 +99,13 @@ void AHeroPawn::Attack()
 	}
 }
 
+float AHeroPawn::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	return 0.0f;
+}
+
 void AHeroPawn::Dash()
 {
 	if (!bLockMovement && 
@@ -153,6 +160,17 @@ void AHeroPawn::Look(const FInputActionInstance& Instance)
 	SpringArm->SetWorldRotation(CalculatedSpringArmRotation);
 }
 
+void AHeroPawn::LockOn(const FInputActionInstance& Instance)
+{
+	UE_LOG(LogTemp, Display, TEXT(" Lock On "));
+}
+
+void AHeroPawn::ChangeLockOn(const FInputActionInstance& Instance)
+{
+	FVector Direction = Instance.GetValue().Get<FVector>();
+	UE_LOG(LogTemp, Display, TEXT("Dir %s"), *Direction.ToString());
+}
+
 void AHeroPawn::SetInputSubsystem()
 {
 	APlayerController* PlayerController = Cast<APlayerController>(Controller);
@@ -198,5 +216,7 @@ void AHeroPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 		Input->BindAction(IA_Movement, ETriggerEvent::Triggered, this, &AHeroPawn::Move);
 		Input->BindAction(IA_Looking, ETriggerEvent::Triggered, this, &AHeroPawn::Look);
 		Input->BindAction(IA_Attack, ETriggerEvent::Started, this, &AHeroPawn::Attack);
+		Input->BindAction(IA_LockOn, ETriggerEvent::Triggered, this, &AHeroPawn::LockOn);
+		Input->BindAction(IA_ChangeLockOn, ETriggerEvent::Started, this, &AHeroPawn::ChangeLockOn);
 	}
 }

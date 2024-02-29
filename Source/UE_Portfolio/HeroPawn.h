@@ -41,6 +41,7 @@ protected:
 	virtual void Jump() override;
 	virtual void Landed(const FHitResult& Hit) override;
 	virtual void Attack() override;
+	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 	void LostStamina(float amount);
 	void EarnStamina(float amount);
@@ -48,6 +49,8 @@ protected:
 	void ChargeStamina();
 	void Move(const FInputActionInstance& Instance);
 	void Look(const FInputActionInstance& Instance);
+	void LockOn(const FInputActionInstance& Instance);
+	void ChangeLockOn(const FInputActionInstance& Instance);
 
 	//Input
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
@@ -67,6 +70,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* IA_Attack;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* IA_LockOn;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* IA_ChangeLockOn;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
 	float MaxStamina = 100;
