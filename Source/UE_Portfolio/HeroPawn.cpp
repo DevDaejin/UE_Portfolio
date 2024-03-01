@@ -10,6 +10,7 @@
 #include "DrawDebugHelpers.h"
 #include "HealthComponent.h"
 #include "AttackComponent.h"
+#include "Kismet\KismetSystemLibrary.h"
 
 AHeroPawn::AHeroPawn()
 {
@@ -21,6 +22,8 @@ void AHeroPawn::BeginPlay()
 	Super::BeginPlay();
 
 	SpringArm = FindComponentByClass<USpringArmComponent>();
+	SpringArmOriginRotation = SpringArm->GetRelativeRotation();
+
 	Camera = FindComponentByClass<UCameraComponent>();
 	AnimInstance = GetMesh()->GetAnimInstance();
 
@@ -71,7 +74,11 @@ void AHeroPawn::LostStamina(float amount)
 	}
 
 	bChargeStamina = false;
-	GetWorld()->GetTimerManager().SetTimer(StaminaChargeTimeHandle, this, &AHeroPawn::ChargeStamina, RechargeTime);
+	GetWorld()->GetTimerManager().SetTimer(
+		StaminaChargeTimeHandle,
+		this,
+		&AHeroPawn::ChargeStamina,
+		RechargeTime);
 }
 
 void AHeroPawn::EarnStamina(float amount)
@@ -86,10 +93,10 @@ void AHeroPawn::EarnStamina(float amount)
 
 void AHeroPawn::Attack()
 {
-	Super::Attack();
+	//Super::Attack();
 
-	if (AttackComponent && 
-		!bLockMovement && 
+	if (AttackComponent &&
+		!bLockMovement &&
 		CurrentJumpCount == 0 &&
 		CurrentStamina >= AttackStaminaCost)
 	{
@@ -108,7 +115,7 @@ float AHeroPawn::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 
 void AHeroPawn::Dash()
 {
-	if (!bLockMovement && 
+	if (!bLockMovement &&
 		CurrentJumpCount == 0 &&
 		CurrentStamina >= DashStaminaCost)
 	{
@@ -126,50 +133,175 @@ void AHeroPawn::ChargeStamina()
 
 void AHeroPawn::Move(const FInputActionInstance& Instance)
 {
-	MoveDirection = FVector(Instance.GetValue().Get<FVector2D>().GetSafeNormal().X, Instance.GetValue().Get<FVector2D>().GetSafeNormal().Y, 0);
+	MoveDirection = FVector(
+		Instance.GetValue().Get<FVector2D>().GetSafeNormal().X,
+		Instance.GetValue().Get<FVector2D>().GetSafeNormal().Y,
+		0);
 
 	if (!bLockMovement && Controller)
 	{
-		FRotator CameraRotator = SpringArm->GetRelativeRotation();
-		CameraRotator.Pitch = 0;
-		CameraRotator.Roll = 0;
+		FVector ForwardDirection;
+		FVector RightDirection;
+		FVector Direction;
 
-		FVector ForwardDirection = FRotationMatrix(CameraRotator).GetUnitAxis(EAxis::X);
-		FVector RightDirection = FRotationMatrix(CameraRotator).GetUnitAxis(EAxis::Y);
-		FVector Direction = ForwardDirection * MoveDirection.Y + RightDirection * MoveDirection.X;
-		if (!Direction.IsNearlyZero())
+		if (!LockedOnTarget)
 		{
-			FRotator CalculatedRotation = FMath::RInterpTo(Controller->GetControlRotation(), Direction.Rotation(), UGameplayStatics::GetWorldDeltaSeconds(this), RotateSpeed);
-			Controller->SetControlRotation(CalculatedRotation);
-		}
+			FRotator CameraRotator = SpringArm->GetRelativeRotation();
+			CameraRotator.Pitch = 0;
+			CameraRotator.Roll = 0;
 
-		AddMovementInput(Direction.GetSafeNormal(), 1);
+			ForwardDirection = FRotationMatrix(CameraRotator).GetUnitAxis(EAxis::X);
+			RightDirection = FRotationMatrix(CameraRotator).GetUnitAxis(EAxis::Y);
+			Direction = ForwardDirection * MoveDirection.Y + RightDirection * MoveDirection.X;
+			if (!Direction.IsNearlyZero())
+			{
+				FRotator CalculatedRotation = FMath::RInterpTo(
+					Controller->GetControlRotation(),
+					Direction.Rotation(),
+					UGameplayStatics::GetWorldDeltaSeconds(this), RotateSpeed);
+
+				Controller->SetControlRotation(CalculatedRotation);
+			}
+
+			AddMovementInput(Direction.GetSafeNormal(), 1);
+		}
+		else
+		{
+			ForwardDirection = FRotationMatrix(GetActorRotation()).GetUnitAxis(EAxis::X);
+			RightDirection = FRotationMatrix(GetActorRotation()).GetUnitAxis(EAxis::Y);
+			Direction = ForwardDirection * MoveDirection.Y + RightDirection * MoveDirection.X;
+			AddMovementInput(Direction.GetSafeNormal(), 1);
+		}
 	}
 }
 
 void AHeroPawn::Look(const FInputActionInstance& Instance)
 {
-	FVector2D LookVector = Instance.GetValue().Get<FVector2D>();
-	LookVector.X *= (UGameplayStatics::GetWorldDeltaSeconds(this) * LookingSenstive);
-	LookVector.Y *= (UGameplayStatics::GetWorldDeltaSeconds(this) * LookingSenstive);
+	if (!LockedOnTarget)
+	{
+		FVector2D LookVector = Instance.GetValue().Get<FVector2D>();
+		LookVector.X *= (UGameplayStatics::GetWorldDeltaSeconds(this) * LookingSenstive);
+		LookVector.Y *= (UGameplayStatics::GetWorldDeltaSeconds(this) * LookingSenstive);
 
-	FRotator CalculatedSpringArmRotation = SpringArm->GetComponentRotation();
-	CalculatedSpringArmRotation.Yaw += LookVector.X;
-	CalculatedSpringArmRotation.Pitch -= LookVector.Y;
-	CalculatedSpringArmRotation.Pitch = FMath::Clamp(CalculatedSpringArmRotation.Pitch, MinPitchAngle, MaxPitchAngle);
-	SpringArm->SetWorldRotation(CalculatedSpringArmRotation);
+
+		FRotator CalculatedSpringArmRotation;
+
+		CalculatedSpringArmRotation =
+			SpringArm->GetComponentRotation() + FRotator(-LookVector.Y, LookVector.X, 0.0f);
+
+		CalculatedSpringArmRotation.Pitch = FMath::Clamp(
+			CalculatedSpringArmRotation.Pitch,
+			MinPitchAngle,
+			MaxPitchAngle);
+
+		CalculatedSpringArmRotation.Yaw = FRotator::ClampAxis(CalculatedSpringArmRotation.Yaw);
+
+		SpringArm->SetWorldRotation(CalculatedSpringArmRotation);
+	}
 }
 
-void AHeroPawn::LockOn(const FInputActionInstance& Instance)
+void AHeroPawn::LockOnTarget(const FInputActionInstance& Instance)
 {
-	UE_LOG(LogTemp, Display, TEXT(" Lock On "));
+	if (LockedOnTarget)
+	{
+		LockedOnTarget = nullptr;
+	}
+	else
+	{
+		TArray<FHitResult> HitResult;
+
+		bool bHitted = DetectEnemy(HitResult);
+
+		if (bHitted && HitResult.Num() > 0)
+		{
+			LockedOnTarget = HitResult[0].GetActor();
+			UE_LOG(LogTemp, Display, TEXT("e %s"), *LockedOnTarget->GetFName().ToString());
+		}
+	}
 }
 
 void AHeroPawn::ChangeLockOn(const FInputActionInstance& Instance)
 {
-	FVector Direction = Instance.GetValue().Get<FVector>();
-	UE_LOG(LogTemp, Display, TEXT("Dir %s"), *Direction.ToString());
+	if (LockedOnTarget)
+	{
+		TArray<FHitResult> HitResult;
+
+		bool bHitted = DetectEnemy(HitResult);
+
+		UE_LOG(LogTemp, Display, TEXT("NUM : %d"), HitResult.Num());
+
+		if (bHitted && HitResult.Num() > 0)
+		{
+			for (FHitResult Result : HitResult)
+			{
+				UE_LOG(LogTemp, Display, TEXT("Elemnt : %s"), *Result.GetActor()->GetFName().ToString());
+			}
+
+			int32 Index = (Instance.GetValue().Get<FVector>().X > 0) ? 1 : (HitResult.Num() - 1);
+
+			if (Index < 0)
+				Index = 0;
+
+			if (Index >= HitResult.Num())
+				Index = HitResult.Num() - 1;
+
+			LockedOnTarget = HitResult[Index].GetActor();
+
+			UE_LOG(LogTemp, Display, TEXT("Index : %d Curret Target : %s"), Index, *LockedOnTarget->GetFName().ToString());
+		}
+	}
 }
+
+bool AHeroPawn::DetectEnemy(TArray<FHitResult>& HitResult)
+{
+	FVector SphereStart = GetActorLocation();
+	FVector SphereEnd = SphereStart + (GetActorForwardVector() * DetectDistance);
+
+	FCollisionShape Sphere = FCollisionShape::MakeSphere(DetectRadius);
+
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	//FVector TraceDistance = GetActorForwardVector() * DetectDistance;
+
+	//DrawDebugSphere(  
+	//	GetWorld(),
+	//	SphereStart,
+	//	10,
+	//	32,
+	//	FColor::Yellow,
+	//	false,
+	//	3);
+
+	//DrawDebugSphere(
+	//	GetWorld(),
+	//	SphereEnd,
+	//	10,
+	//	32,
+	//	FColor::Yellow,
+	//	false,
+	//	3);
+
+	//DrawDebugCapsule(
+	//	GetWorld(),
+	//	SphereStart + (TraceDistance * 0.5f),
+	//	DetectDistance * 0.5f + DetectRadius,
+	//	DetectRadius,
+	//	FRotationMatrix::MakeFromZ(TraceDistance).ToQuat(),
+	//	FColor::Green,
+	//	false,
+	//	3.f);
+
+	return GetWorld()->SweepMultiByChannel(
+		HitResult,
+		SphereStart,
+		SphereEnd,
+		FQuat::Identity,
+		ECollisionChannel::ECC_GameTraceChannel1,
+		Sphere,
+		Params);
+}
+
 
 void AHeroPawn::SetInputSubsystem()
 {
@@ -201,6 +333,19 @@ void AHeroPawn::Tick(float DeltaTime)
 	{
 		EarnStamina(StaminaChargeAmount * DeltaTime);
 	}
+
+	if (LockedOnTarget)
+	{
+		FRotator LookAt = (LockedOnTarget->GetActorLocation() - GetActorLocation()).Rotation();
+		Controller->SetControlRotation(LookAt);
+
+		FRotator Smooth = FMath::RInterpTo(
+			SpringArm->GetRelativeRotation(), 
+			Controller->GetControlRotation() + SpringArmOriginRotation, 
+			DeltaTime, 
+			CamSpeedByLockOn);
+		SpringArm->SetRelativeRotation(Smooth);
+	}
 }
 
 void AHeroPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -216,7 +361,7 @@ void AHeroPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 		Input->BindAction(IA_Movement, ETriggerEvent::Triggered, this, &AHeroPawn::Move);
 		Input->BindAction(IA_Looking, ETriggerEvent::Triggered, this, &AHeroPawn::Look);
 		Input->BindAction(IA_Attack, ETriggerEvent::Started, this, &AHeroPawn::Attack);
-		Input->BindAction(IA_LockOn, ETriggerEvent::Triggered, this, &AHeroPawn::LockOn);
+		Input->BindAction(IA_LockOn, ETriggerEvent::Started, this, &AHeroPawn::LockOnTarget);
 		Input->BindAction(IA_ChangeLockOn, ETriggerEvent::Started, this, &AHeroPawn::ChangeLockOn);
 	}
 }

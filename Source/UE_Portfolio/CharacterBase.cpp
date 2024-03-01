@@ -2,6 +2,8 @@
 #include "HealthComponent.h"
 #include "AttackComponent.h"
 #include "Engine/DamageEvents.h"
+#include "Components/CapsuleComponent.h"
+
 #include "GameFramework/CharacterMovementComponent.h"
 
 ACharacterBase::ACharacterBase()
@@ -43,7 +45,7 @@ float ACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageE
 			if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
 			{
 				FPointDamageEvent* PointDamageEvent = (FPointDamageEvent*)&DamageEvent;
-				Impulse = PointDamageEvent->ShotDirection;
+				Impulse = -(PointDamageEvent->ShotDirection);
 			}
 
 			UE_LOG(LogTemp, Display, TEXT("Impulse : %s"), *Impulse.ToString());
@@ -57,7 +59,6 @@ float ACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageE
 void ACharacterBase::Death(FVector ForceDirection)
 {
 	USkeletalMeshComponent* MeshComponent = GetMesh();
-
 	if (MeshComponent)
 	{
 		MeshComponent->SetCollisionProfileName(TEXT("Ragdoll"));
@@ -74,8 +75,15 @@ void ACharacterBase::Death(FVector ForceDirection)
 			MovementComponent->SetComponentTickEnabled(false);
 		}
 	}
+
+	UCapsuleComponent* CapsuleComp = GetComponentByClass<UCapsuleComponent>();
+	if (CapsuleComp)
+	{
+		CapsuleComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
 }
 
 void ACharacterBase::Attack()
 {
+	AttackComponent->Attack();
 }

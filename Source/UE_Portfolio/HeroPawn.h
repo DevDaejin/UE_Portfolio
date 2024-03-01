@@ -49,8 +49,9 @@ protected:
 	void ChargeStamina();
 	void Move(const FInputActionInstance& Instance);
 	void Look(const FInputActionInstance& Instance);
-	void LockOn(const FInputActionInstance& Instance);
+	void LockOnTarget(const FInputActionInstance& Instance);
 	void ChangeLockOn(const FInputActionInstance& Instance);
+	bool DetectEnemy(TArray<FHitResult>& HitResult);
 
 	//Input
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
@@ -77,6 +78,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* IA_ChangeLockOn;
 
+	//Stat
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
 	float MaxStamina = 100;
 
@@ -100,11 +102,16 @@ protected:
 	float LookingSenstive = 50;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
+	float CamSpeedByLockOn = 50;
+
+	//Jump
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
 	int32 MaxJumpCount = 2;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
 	float SecondJumpForce = 600.f;
 
+	//Stamina
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
 	float AttackStaminaCost = 10;
 
@@ -116,6 +123,16 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
 	bool bChargeStamina = true;
+
+	//LockOn
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
+	float DetectRadius = 250.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
+	float DetectDistance = 3000.f;
+
+
+
 
 private:
 	void SetInputSubsystem();
@@ -131,6 +148,10 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
 	float MaxPitchAngle = 85;
+
+	AActor* LockedOnTarget;
+
+	FRotator SpringArmOriginRotation;
 
 	USpringArmComponent* SpringArm;
 	UCameraComponent* Camera;
