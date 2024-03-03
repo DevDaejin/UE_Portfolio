@@ -170,7 +170,23 @@ void AHeroPawn::Move(const FInputActionInstance& Instance)
 			ForwardDirection = FRotationMatrix(GetActorRotation()).GetUnitAxis(EAxis::X);
 			RightDirection = FRotationMatrix(GetActorRotation()).GetUnitAxis(EAxis::Y);
 			Direction = ForwardDirection * MoveDirection.Y + RightDirection * MoveDirection.X;
-			AddMovementInput(Direction.GetSafeNormal(), 1);
+
+			if(MoveDirection.Y > 0)
+				AnimInstance->Montage_Play(LockOnForwardMontage, LockOnForwardMontage->GetPlayLength());
+
+			if (MoveDirection.Y < 0)
+				AnimInstance->Montage_Play(LockOnBackwardMontage, LockOnBackwardMontage->GetPlayLength());
+
+			if (MoveDirection.X > 0)
+				AnimInstance->Montage_Play(LockOnRightwardMontage, LockOnRightwardMontage->GetPlayLength());
+
+			if (MoveDirection.X < 0)
+				AnimInstance->Montage_Play(LockOnLeftwardMontage, LockOnLeftwardMontage->GetPlayLength());
+
+			if (MoveDirection.X == 0 && MoveDirection.Y == 0)
+				AnimInstance->Montage_Stop(0.2f);
+
+			AddMovementInput(Direction.GetSafeNormal(), 0.5f);
 		}
 	}
 }

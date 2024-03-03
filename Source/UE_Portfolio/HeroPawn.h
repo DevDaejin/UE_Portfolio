@@ -21,6 +21,16 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	//Animation
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	UAnimMontage* LockOnForwardMontage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	UAnimMontage* LockOnBackwardMontage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	UAnimMontage* LockOnLeftwardMontage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	UAnimMontage* LockOnRightwardMontage;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
 	UAnimMontage* DashMontage;
 
@@ -136,6 +146,7 @@ protected:
 
 private:
 	void SetInputSubsystem();
+	void PlayMontage
 
 	UPROPERTY(VisibleAnywhere, Category = "Status")
 	int32 CurrentJumpCount = 0;
