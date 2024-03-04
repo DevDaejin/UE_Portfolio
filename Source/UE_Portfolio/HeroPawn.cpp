@@ -330,6 +330,8 @@ void AHeroPawn::LockOnTarget(const FInputActionInstance& Instance)
 	if (LockedOnTarget)
 	{
 		LockedOnTarget = nullptr;
+		SpringArm->bUsePawnControlRotation = false;
+		SpringArm->bInheritYaw = false;
 	}
 	else
 	{
@@ -340,6 +342,10 @@ void AHeroPawn::LockOnTarget(const FInputActionInstance& Instance)
 		if (bHitted && HitResult.Num() > 0)
 		{
 			LockedOnTarget = HitResult[0].GetActor();
+
+			SpringArm->bUsePawnControlRotation = true;
+			SpringArm->bInheritYaw = true;
+
 			UE_LOG(LogTemp, Display, TEXT("e %s"), *LockedOnTarget->GetFName().ToString());
 		}
 	}
@@ -461,18 +467,20 @@ void AHeroPawn::Tick(float DeltaTime)
 
 	if (LockedOnTarget)
 	{
-		if (bCanDashing)
-		{
-			FRotator LookAt = (LockedOnTarget->GetActorLocation() - GetActorLocation()).Rotation();
-			Controller->SetControlRotation(LookAt);
-		}
-		FRotator Smooth = FMath::RInterpTo(
+		FRotator LookAt = (LockedOnTarget->GetActorLocation() - GetActorLocation()).Rotation();
+		Controller->SetControlRotation(LookAt);
+		//if (bCanDashing)
+		//{
+		//	FRotator LookAt = (LockedOnTarget->GetActorLocation() - GetActorLocation()).Rotation();
+		//	Controller->SetControlRotation(LookAt);
+		//}
+		/*FRotator Smooth = FMath::RInterpTo(
 			SpringArm->GetRelativeRotation(),
 			Controller->GetControlRotation() + SpringArmOriginRotation,
 			DeltaTime,
 			CamSpeedByLockOn);
 
-		SpringArm->SetRelativeRotation(Smooth);
+		SpringArm->SetRelativeRotation(Smooth);*/
 	}
 
 	if (!bCanDashing)
