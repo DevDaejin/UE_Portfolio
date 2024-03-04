@@ -59,7 +59,7 @@ float ACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageE
 void ACharacterBase::Death(FVector ForceDirection)
 {
 	USkeletalMeshComponent* MeshComponent = GetMesh();
-	if (MeshComponent)
+	if (MeshComponent)z
 	{
 		MeshComponent->SetCollisionProfileName(TEXT("Ragdoll"));
 		MeshComponent->SetSimulatePhysics(true);
