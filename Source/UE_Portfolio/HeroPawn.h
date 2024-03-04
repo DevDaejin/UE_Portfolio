@@ -35,9 +35,6 @@ public:
 	UAnimMontage* DashMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
-	bool bLockMovement = false;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
 	float DashSpeed = 500.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
@@ -45,6 +42,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
 	float InvincibleEndTime = 0.8f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
+	bool bCanInput = true;
+
+	AActor* LockedOnTarget;
+	FVector MoveDirection;
 
 protected:
 	virtual void BeginPlay() override;
@@ -56,8 +59,11 @@ protected:
 	void LostStamina(float amount);
 	void EarnStamina(float amount);
 	void Dash();
+	void DashTick(float DeltaTime);
+	void ResetDashing();
 	void ChargeStamina();
 	void Move(const FInputActionInstance& Instance);
+	void StopMove();
 	void Look(const FInputActionInstance& Instance);
 	void LockOnTarget(const FInputActionInstance& Instance);
 	void ChangeLockOn(const FInputActionInstance& Instance);
@@ -141,30 +147,32 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
 	float DetectDistance = 3000.f;
 
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
+	bool bCanDashing = true;
 
 
 private:
 	void SetInputSubsystem();
-	void PlayMontage
 
 	UPROPERTY(VisibleAnywhere, Category = "Status")
 	int32 CurrentJumpCount = 0;
 
-	FVector MoveDirection;
 	FTimerHandle StaminaChargeTimeHandle;
+	FTimerHandle DashCooldownTimeHanlde;
 
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
 	float MinPitchAngle = -85;
 
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
 	float MaxPitchAngle = 85;
-
-	AActor* LockedOnTarget;
+	float DashTickTimer;
+	float OriginMeshYaw;
+	FVector DashDirection;
 
 	FRotator SpringArmOriginRotation;
-
+	
 	USpringArmComponent* SpringArm;
 	UCameraComponent* Camera;
+	
 	UAnimInstance* AnimInstance;
 };

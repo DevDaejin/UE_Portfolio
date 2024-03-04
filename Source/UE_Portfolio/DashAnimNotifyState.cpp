@@ -8,8 +8,10 @@ void UDashAnimNotifyState::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSe
 	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
 	if (AHeroPawn* Hero = Cast<AHeroPawn>(MeshComp->GetOwner()))
 	{
-		FVector Direction = Hero->GetActorForwardVector();
-		Forward = Hero->GetActorForwardVector();
+		FVector Forward = Hero->GetActorForwardVector() * Hero->MoveDirection.Y;
+		FVector Right = Hero->GetActorRightVector() * Hero->MoveDirection.X;
+		Direction = (Forward + Right).GetSafeNormal();
+
 		Duriation = Hero->DashMontage->GetPlayLength();
 		InvincibleStartTime = Hero->InvincibleStartTime;
 		InvincibleEndTime = Hero->InvincibleEndTime;
@@ -23,23 +25,6 @@ void UDashAnimNotifyState::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSeq
 
 	if (AHeroPawn* Hero = Cast<AHeroPawn>(MeshComp->GetOwner()))
 	{
-		if (Duriation >= Time)
-		{
-			Time += FrameDeltaTime;
-			FVector Location = Hero->GetActorLocation() + (Forward * Hero->DashSpeed * FrameDeltaTime/Duriation);
-			Hero->SetActorLocation(Location);
-		}
-
-		if (UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(Hero->GetRootComponent()))
-		{
-			if (InvincibleStartTime >= Time && InvincibleEndTime <= Time)
-			{
-				Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			}
-			else
-			{
-				Capsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-			}
-		}
+		
 	}
 }

@@ -7,6 +7,6 @@ void UMovableAnimNotify::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceB
 
 	if (AHeroPawn* Hero = Cast<AHeroPawn>(MeshComp->GetOwner()))
 	{
-		Hero->bLockMovement = false;
+		Hero->bCanInput = true;
 	}
 }

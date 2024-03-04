@@ -4,6 +4,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Engine/SkeletalMeshSocket.h"
@@ -30,11 +31,12 @@ void AHeroPawn::BeginPlay()
 	SetInputSubsystem();
 
 	CurrentStamina = MaxStamina;
+	OriginMeshYaw = GetMesh()->GetRelativeRotation().Yaw;
 }
 
 void AHeroPawn::Jump()
 {
-	if (!bLockMovement)
+	if (bCanInput)
 	{
 		if (CurrentJumpCount == 0 && CurrentStamina >= JumpStaminaCost)
 		{
@@ -96,11 +98,11 @@ void AHeroPawn::Attack()
 	//Super::Attack();
 
 	if (AttackComponent &&
-		!bLockMovement &&
+		bCanInput &&
 		CurrentJumpCount == 0 &&
 		CurrentStamina >= AttackStaminaCost)
 	{
-		bLockMovement = true;
+		bCanInput = false;
 		LostStamina(AttackStaminaCost);
 		AttackComponent->Attack();
 	}
@@ -115,15 +117,97 @@ float AHeroPawn::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 
 void AHeroPawn::Dash()
 {
-	if (!bLockMovement &&
+	if (bCanDashing &&
+		bCanInput &&
 		CurrentJumpCount == 0 &&
 		CurrentStamina >= DashStaminaCost)
 	{
-		bLockMovement = true;
+		bCanInput = false;
+		bCanDashing = false;
 		LostStamina(DashStaminaCost);
-		FVector Direction = Controller->GetPawn()->GetActorForwardVector();
+
+		GetWorld()->GetTimerManager().SetTimer(
+			DashCooldownTimeHanlde, 
+			this,
+			&AHeroPawn::ResetDashing,
+			DashMontage->GetPlayLength());
+
 		AnimInstance->Montage_Play(DashMontage, DashMontage->GetPlayLength());
+		DashDirection = MoveDirection;
+		DashTickTimer = 0;
+
+		//if (LockedOnTarget)
+		//{
+		//	float Yaw = OriginMeshYaw;
+
+		//	if (MoveDirection.Y < 0)
+		//	{
+		//		Yaw *= -1;
+		//	}
+
+		//	/*if (MoveDirection.Y > 0)
+		//	{
+		//		Yaw = OriginMeshYaw + 90;
+		//	}
+
+		//	if (MoveDirection.Y < 0)
+		//	{
+		//		Yaw = OriginMeshYaw - 90;
+		//	}*/
+
+		//	FRotator Rotator(0, Yaw, 0);
+		//	GetMesh()->SetRelativeRotation(Rotator.Quaternion());
+
+		//	UE_LOG(LogTemp, Display, TEXT("1 : %s"), *GetMesh()->GetRelativeRotation().ToString());
+		//}
 	}
+}
+
+void AHeroPawn::DashTick(float DeltaTime)
+{
+	float Duriation = (DashMontage->GetPlayLength() * 0.85f);
+
+	if (DashTickTimer < Duriation)
+	{
+		FVector Location;
+		if (LockedOnTarget)
+		{
+			FVector Direction = 
+				GetActorForwardVector() * DashDirection.Y +
+				GetActorRightVector() * DashDirection.X;
+
+			Location = 
+				GetActorLocation() + 
+				(Direction * DashSpeed * DeltaTime / Duriation);
+		}
+		else
+		{
+			Location = 
+				GetActorLocation() + 
+				(GetActorForwardVector() * DashSpeed * DeltaTime / Duriation);
+		}
+
+		SetActorLocation(Location);
+		DashTickTimer += DeltaTime;
+	}
+
+	if (UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(GetRootComponent()))
+	{
+		if (InvincibleStartTime >= DashTickTimer && InvincibleEndTime <= DashTickTimer)
+		{
+			Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		}
+		else
+		{
+			Capsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		}
+	}
+}
+
+void AHeroPawn::ResetDashing()
+{
+	bCanDashing = true;	
+	GetMesh()->SetRelativeRotation(FRotator(0, OriginMeshYaw, 0).Quaternion());
 }
 
 void AHeroPawn::ChargeStamina()
@@ -138,7 +222,7 @@ void AHeroPawn::Move(const FInputActionInstance& Instance)
 		Instance.GetValue().Get<FVector2D>().GetSafeNormal().Y,
 		0);
 
-	if (!bLockMovement && Controller)
+	if (bCanInput && Controller)
 	{
 		FVector ForwardDirection;
 		FVector RightDirection;
@@ -171,23 +255,48 @@ void AHeroPawn::Move(const FInputActionInstance& Instance)
 			RightDirection = FRotationMatrix(GetActorRotation()).GetUnitAxis(EAxis::Y);
 			Direction = ForwardDirection * MoveDirection.Y + RightDirection * MoveDirection.X;
 
-			if(MoveDirection.Y > 0)
-				AnimInstance->Montage_Play(LockOnForwardMontage, LockOnForwardMontage->GetPlayLength());
+			if (MoveDirection.Y > 0)
+			{
+				if (!AnimInstance->Montage_IsPlaying(LockOnForwardMontage))
+				{
+					AnimInstance->Montage_Play(LockOnForwardMontage, LockOnForwardMontage->GetPlayLength());
+				}
+			}
 
-			if (MoveDirection.Y < 0)
-				AnimInstance->Montage_Play(LockOnBackwardMontage, LockOnBackwardMontage->GetPlayLength());
+			else if (MoveDirection.Y < 0)
+			{
+				if (!AnimInstance->Montage_IsPlaying(LockOnBackwardMontage))
+				{
+					AnimInstance->Montage_Play(LockOnBackwardMontage, LockOnBackwardMontage->GetPlayLength());
+				}
+			}
 
-			if (MoveDirection.X > 0)
-				AnimInstance->Montage_Play(LockOnRightwardMontage, LockOnRightwardMontage->GetPlayLength());
+			else if (MoveDirection.X > 0)
+			{
+				if(!AnimInstance->Montage_IsPlaying(LockOnRightwardMontage))
+				{
+					AnimInstance->Montage_Play(LockOnRightwardMontage, LockOnRightwardMontage->GetPlayLength());
+				}
+			}
 
-			if (MoveDirection.X < 0)
-				AnimInstance->Montage_Play(LockOnLeftwardMontage, LockOnLeftwardMontage->GetPlayLength());
-
-			if (MoveDirection.X == 0 && MoveDirection.Y == 0)
-				AnimInstance->Montage_Stop(0.2f);
+			else if (MoveDirection.X < 0)
+			{
+				if (!AnimInstance->Montage_IsPlaying(LockOnLeftwardMontage))
+				{
+					AnimInstance->Montage_Play(LockOnLeftwardMontage, LockOnLeftwardMontage->GetPlayLength());
+				}
+			}
 
 			AddMovementInput(Direction.GetSafeNormal(), 0.5f);
 		}
+	}
+}
+
+void AHeroPawn::StopMove()
+{
+	if (LockedOnTarget && bCanInput)
+	{
+		AnimInstance->Montage_Stop(0.25f);
 	}
 }
 
@@ -248,7 +357,7 @@ void AHeroPawn::ChangeLockOn(const FInputActionInstance& Instance)
 
 		if (bHitted && HitResult.Num() > 0)
 		{
-			for (FHitResult Result : HitResult)
+			for (const FHitResult Result : HitResult)
 			{
 				UE_LOG(LogTemp, Display, TEXT("Elemnt : %s"), *Result.GetActor()->GetFName().ToString());
 			}
@@ -352,15 +461,23 @@ void AHeroPawn::Tick(float DeltaTime)
 
 	if (LockedOnTarget)
 	{
-		FRotator LookAt = (LockedOnTarget->GetActorLocation() - GetActorLocation()).Rotation();
-		Controller->SetControlRotation(LookAt);
-
+		if (bCanDashing)
+		{
+			FRotator LookAt = (LockedOnTarget->GetActorLocation() - GetActorLocation()).Rotation();
+			Controller->SetControlRotation(LookAt);
+		}
 		FRotator Smooth = FMath::RInterpTo(
-			SpringArm->GetRelativeRotation(), 
-			Controller->GetControlRotation() + SpringArmOriginRotation, 
-			DeltaTime, 
+			SpringArm->GetRelativeRotation(),
+			Controller->GetControlRotation() + SpringArmOriginRotation,
+			DeltaTime,
 			CamSpeedByLockOn);
+
 		SpringArm->SetRelativeRotation(Smooth);
+	}
+
+	if (!bCanDashing)
+	{
+		DashTick(DeltaTime);
 	}
 }
 
@@ -375,6 +492,7 @@ void AHeroPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 		Input->BindAction(IA_Jump, ETriggerEvent::Started, this, &AHeroPawn::Jump);
 		Input->BindAction(IA_Dash, ETriggerEvent::Started, this, &AHeroPawn::Dash);
 		Input->BindAction(IA_Movement, ETriggerEvent::Triggered, this, &AHeroPawn::Move);
+		Input->BindAction(IA_Movement, ETriggerEvent::Completed, this, &AHeroPawn::StopMove);
 		Input->BindAction(IA_Looking, ETriggerEvent::Triggered, this, &AHeroPawn::Look);
 		Input->BindAction(IA_Attack, ETriggerEvent::Started, this, &AHeroPawn::Attack);
 		Input->BindAction(IA_LockOn, ETriggerEvent::Started, this, &AHeroPawn::LockOnTarget);

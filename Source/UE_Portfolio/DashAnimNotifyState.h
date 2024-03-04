@@ -13,7 +13,7 @@ class UE_PORTFOLIO_API UDashAnimNotifyState : public UAnimNotifyState
 	virtual void NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float FrameDeltaTime, const FAnimNotifyEventReference& EventReference) override;
 	/*virtual void NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference) override;*/
 
-	FVector Forward;
+	FVector Direction;
 	float Time;
 	float Duriation;
 	float InvincibleStartTime;
