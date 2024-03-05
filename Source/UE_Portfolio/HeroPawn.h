@@ -49,6 +49,9 @@ public:
 	AActor* LockedOnTarget;
 	FVector MoveDirection;
 
+	USpringArmComponent* SpringArm;
+	UCameraComponent* Camera;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Jump() override;
@@ -170,9 +173,6 @@ private:
 	FVector DashDirection;
 
 	FRotator SpringArmOriginRotation;
-	
-	USpringArmComponent* SpringArm;
-	UCameraComponent* Camera;
 	
 	UAnimInstance* AnimInstance;
 };

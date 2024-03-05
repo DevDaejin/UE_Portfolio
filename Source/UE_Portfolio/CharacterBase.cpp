@@ -35,20 +35,17 @@ float ACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageE
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	if (DamageAmount > 0.f)
 	{
-		UE_LOG(LogTemp, Display, TEXT("D %f"), DamageAmount);
-
 		HealthComponent->LostHP(DamageAmount);
 
 		if (HealthComponent && HealthComponent->GetCurrentHP() == 0)
 		{
 			FVector Impulse(0, 0, 0);
+
 			if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
 			{
 				FPointDamageEvent* PointDamageEvent = (FPointDamageEvent*)&DamageEvent;
 				Impulse = -(PointDamageEvent->ShotDirection);
 			}
-
-			UE_LOG(LogTemp, Display, TEXT("Impulse : %s"), *Impulse.ToString());
 
 			Death(Impulse);
 		}
@@ -59,7 +56,7 @@ float ACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageE
 void ACharacterBase::Death(FVector ForceDirection)
 {
 	USkeletalMeshComponent* MeshComponent = GetMesh();
-	if (MeshComponent)z
+	if (MeshComponent)
 	{
 		MeshComponent->SetCollisionProfileName(TEXT("Ragdoll"));
 		MeshComponent->SetSimulatePhysics(true);

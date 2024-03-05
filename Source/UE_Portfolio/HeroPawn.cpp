@@ -40,22 +40,18 @@ void AHeroPawn::Jump()
 	{
 		if (CurrentJumpCount == 0 && CurrentStamina >= JumpStaminaCost)
 		{
-			LostStamina(JumpStaminaCost);
-
 			Super::Jump();
 		}
 		else if (CurrentJumpCount == 1 && CurrentStamina >= JumpStaminaCost)
 		{
-			LostStamina(JumpStaminaCost);
-
-			FVector Direction = GetActorUpVector();
-			LaunchCharacter(Direction * SecondJumpForce, false, true);
+			LaunchCharacter(GetActorUpVector() * SecondJumpForce, false, true);
 		}
 		else
 		{
 			return;
 		}
 
+		LostStamina(JumpStaminaCost);
 		CurrentJumpCount++;
 	}
 }
@@ -111,7 +107,6 @@ void AHeroPawn::Attack()
 float AHeroPawn::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-
 	return 0.0f;
 }
 
@@ -124,6 +119,10 @@ void AHeroPawn::Dash()
 	{
 		bCanInput = false;
 		bCanDashing = false;
+
+		DashDirection = MoveDirection;
+		DashTickTimer = 0;
+
 		LostStamina(DashStaminaCost);
 
 		GetWorld()->GetTimerManager().SetTimer(
@@ -133,33 +132,6 @@ void AHeroPawn::Dash()
 			DashMontage->GetPlayLength());
 
 		AnimInstance->Montage_Play(DashMontage, DashMontage->GetPlayLength());
-		DashDirection = MoveDirection;
-		DashTickTimer = 0;
-
-		//if (LockedOnTarget)
-		//{
-		//	float Yaw = OriginMeshYaw;
-
-		//	if (MoveDirection.Y < 0)
-		//	{
-		//		Yaw *= -1;
-		//	}
-
-		//	/*if (MoveDirection.Y > 0)
-		//	{
-		//		Yaw = OriginMeshYaw + 90;
-		//	}
-
-		//	if (MoveDirection.Y < 0)
-		//	{
-		//		Yaw = OriginMeshYaw - 90;
-		//	}*/
-
-		//	FRotator Rotator(0, Yaw, 0);
-		//	GetMesh()->SetRelativeRotation(Rotator.Quaternion());
-
-		//	UE_LOG(LogTemp, Display, TEXT("1 : %s"), *GetMesh()->GetRelativeRotation().ToString());
-		//}
 	}
 }
 
@@ -237,6 +209,7 @@ void AHeroPawn::Move(const FInputActionInstance& Instance)
 			ForwardDirection = FRotationMatrix(CameraRotator).GetUnitAxis(EAxis::X);
 			RightDirection = FRotationMatrix(CameraRotator).GetUnitAxis(EAxis::Y);
 			Direction = ForwardDirection * MoveDirection.Y + RightDirection * MoveDirection.X;
+
 			if (!Direction.IsNearlyZero())
 			{
 				FRotator CalculatedRotation = FMath::RInterpTo(
@@ -469,18 +442,6 @@ void AHeroPawn::Tick(float DeltaTime)
 	{
 		FRotator LookAt = (LockedOnTarget->GetActorLocation() - GetActorLocation()).Rotation();
 		Controller->SetControlRotation(LookAt);
-		//if (bCanDashing)
-		//{
-		//	FRotator LookAt = (LockedOnTarget->GetActorLocation() - GetActorLocation()).Rotation();
-		//	Controller->SetControlRotation(LookAt);
-		//}
-		/*FRotator Smooth = FMath::RInterpTo(
-			SpringArm->GetRelativeRotation(),
-			Controller->GetControlRotation() + SpringArmOriginRotation,
-			DeltaTime,
-			CamSpeedByLockOn);
-
-		SpringArm->SetRelativeRotation(Smooth);*/
 	}
 
 	if (!bCanDashing)
