@@ -1,4 +1,6 @@
 #include "HealthComponent.h"
+#include "HPBar.h"
+#include "Blueprint/UserWidget.h"
 
 UHealthComponent::UHealthComponent()
 {
@@ -8,6 +10,12 @@ UHealthComponent::UHealthComponent()
 void UHealthComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	HPBar = CreateWidget<UHPBar>(GetWorld(), HPBarSubclass);
+	if (HPBar)
+	{
+		UpdateHPBar();
+	}
+
 	Full();
 }
 
@@ -28,7 +36,10 @@ void UHealthComponent::EarnHP(int Amount)
 	if (HP > MaxHP)
 	{
 		Full();
+		return;
 	}
+
+	UpdateHPBar();
 }
 
 bool UHealthComponent::LostHP(int Amount)
@@ -41,6 +52,7 @@ bool UHealthComponent::LostHP(int Amount)
 		return false;
 	}
 
+	UpdateHPBar();
 	return true;
 }
 
@@ -48,6 +60,8 @@ void UHealthComponent::EarnMaxHP(int Amount)
 {
 	MaxHP += Amount;
 	HP += Amount;
+
+	UpdateHPBar();
 }
 
 void UHealthComponent::LostMaxHP(int Amount)
@@ -60,16 +74,29 @@ void UHealthComponent::LostMaxHP(int Amount)
 	if (MaxHP < HP)
 	{
 		Full();
+		return;
+	}
+
+	UpdateHPBar();
+}
+
+void UHealthComponent::UpdateHPBar()
+{
+	if (HPBar)
+	{
+		HPBar->UpdateHPBar(HP / MaxHP);
 	}
 }
 
 void UHealthComponent::Kill()
 {
 	HP = 0;
+	UpdateHPBar();
 }
 
 void UHealthComponent::Full()
 {
 	HP = MaxHP;
+	UpdateHPBar();
 }
 

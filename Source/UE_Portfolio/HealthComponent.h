@@ -4,6 +4,7 @@
 #include "Components/ActorComponent.h"
 #include "HealthComponent.generated.h"
 
+class UHPBar;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UE_PORTFOLIO_API UHealthComponent : public UActorComponent
@@ -20,6 +21,10 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSubclassOf<UUserWidget> HPBarSubclass;
+	UHPBar* HPBar;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 HP;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -31,6 +36,7 @@ public:
 	bool LostHP(int Amount);
 	void EarnMaxHP(int Amount);
 	void LostMaxHP(int Amount);
+	void UpdateHPBar();
 	void Kill();
 	void Full();
 };
