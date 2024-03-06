@@ -16,6 +16,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void InitializeComponent() override;
 
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;

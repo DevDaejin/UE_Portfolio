@@ -3,19 +3,21 @@
 #include "AttackComponent.h"
 #include "Engine/DamageEvents.h"
 #include "Components/CapsuleComponent.h"
-
+#include "HealthComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 ACharacterBase::ACharacterBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("MyComponent"));
 }
 
 void ACharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	HealthComponent = FindComponentByClass<UHealthComponent>();
+	//HealthComponent = FindComponentByClass<UHealthComponent>();
 	AttackComponent = FindComponentByClass<UAttackComponent>();
 }
 
@@ -33,23 +35,23 @@ void ACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 float ACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-	if (DamageAmount > 0.f)
+	
+	if (DamageAmount > 0.f &&
+		HealthComponent && 
+		HealthComponent->GetCurrentHP() == 0)
 	{
 		HealthComponent->LostHP(DamageAmount);
+		FVector Impulse(0, 0, 0);
 
-		if (HealthComponent && HealthComponent->GetCurrentHP() == 0)
+		if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
 		{
-			FVector Impulse(0, 0, 0);
-
-			if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
-			{
-				FPointDamageEvent* PointDamageEvent = (FPointDamageEvent*)&DamageEvent;
-				Impulse = -(PointDamageEvent->ShotDirection);
-			}
-
-			Death(Impulse);
+			FPointDamageEvent* PointDamageEvent = (FPointDamageEvent*)&DamageEvent;
+			Impulse = -(PointDamageEvent->ShotDirection);
 		}
+
+		Death(Impulse);
 	}
+
 	return 0.0f;
 }
 
