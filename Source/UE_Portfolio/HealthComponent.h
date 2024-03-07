@@ -5,6 +5,8 @@
 #include "HealthComponent.generated.h"
 
 class UHPBar;
+class UWidgetComponent;
+class UCameraComponent;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UE_PORTFOLIO_API UHealthComponent : public UActorComponent
@@ -22,7 +24,9 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TSubclassOf<UUserWidget> HPBarSubclass;
+	TSubclassOf<UUserWidget> HPBarSubclassOf;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UWidgetComponent* WidgetComponent;
 	UHPBar* HPBar;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -40,4 +44,6 @@ public:
 	void UpdateHPBar();
 	void Kill();
 	void Full();
+	void Billboarding();
+	UCameraComponent* Camera;
 };

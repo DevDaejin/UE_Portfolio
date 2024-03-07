@@ -2,6 +2,8 @@
 #include "HPBar.h"
 #include "Engine/Blueprint.h"
 #include "Blueprint/UserWidget.h"
+#include "HeroPawn.h"
+#include "Camera/CameraComponent.h"
 #include "Components/WidgetComponent.h"
 
 UHealthComponent::UHealthComponent()
@@ -14,48 +16,26 @@ void UHealthComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	//HPBar = CreateWidget<UHPBar>(GetWorld(), HPBarSubclass);
-	//if (HPBar)
-	//{
-	//	UpdateHPBar();
-	//}
-
-	//Full();
-
-	FString WidgetPath = "/Game/Blueprints/BP_EnemyHPBar.BP_EnemyHPBar_C";
-	UClass* WidgetClass = LoadClass<UUserWidget>(nullptr, *WidgetPath);
+	UClass* WidgetClass = HPBarSubclassOf;
 	if (WidgetClass)
 	{
-		// 로드 성공
 		UUserWidget* WidgetInstance = CreateWidget<UUserWidget>(GetWorld(), WidgetClass);
-		UE_LOG(LogTemp, Display, TEXT("00"));
 		if (WidgetInstance)
 		{
-			UE_LOG(LogTemp, Display, TEXT("11"));
-			// 위젯 인스턴스 생성 성공
-			// 액터에 위젯 컴포넌트 추가
-			UWidgetComponent* WidgetComponent = NewObject<UWidgetComponent>(this);
+			HPBar = Cast<UHPBar>(WidgetInstance);
+			WidgetComponent = NewObject<UWidgetComponent>(GetOwner());
 			if (WidgetComponent)
 			{
-				// 생성된 위젯 컴포넌트에 위젯 설정
 				WidgetComponent->SetWidget(WidgetInstance);
 
-				// 액터에 위젯 컴포넌트 추가
+				WidgetComponent->RegisterComponent();
 				WidgetComponent->AttachToComponent(GetOwner()->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
-				UE_LOG(LogTemp, Display, TEXT("AA"));
-			}
-			else
-			{
-				// 위젯 컴포넌트 생성 실패
-				UE_LOG(LogTemp, Display, TEXT("CC"));
+				WidgetComponent->SetRelativeLocation(FVector(0, 0, 130));
 			}
 		}
 	}
-	else
-	{
-		// 로드 실패
-		UE_LOG(LogTemp, Display, TEXT("BB"));
-	}
+
+	Full();
 }
 
 void UHealthComponent::InitializeComponent()
@@ -66,6 +46,8 @@ void UHealthComponent::InitializeComponent()
 void UHealthComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	Billboarding();
 }
 
 int32 UHealthComponent::GetCurrentHP()
@@ -89,7 +71,6 @@ void UHealthComponent::EarnHP(int Amount)
 bool UHealthComponent::LostHP(int Amount)
 {
 	HP -= Amount;
-	UE_LOG(LogTemp, Display, TEXT("Owner : %s"), *GetOwner()->GetFName().ToString());
 	if (HP <= 0)
 	{
 		Kill();
@@ -142,5 +123,29 @@ void UHealthComponent::Full()
 {
 	HP = MaxHP;
 	UpdateHPBar();
+}
+
+void UHealthComponent::Billboarding()
+{
+	if (!Camera)
+	{
+		if (GetWorld() &&
+			GetWorld()->GetFirstPlayerController() &&
+			GetWorld()->GetFirstPlayerController()->GetPawn())
+		{
+			AHeroPawn* HeroPawn = Cast<AHeroPawn>(GetWorld()->GetFirstPlayerController()->GetPawn());
+			if (HeroPawn)
+			{
+				Camera = HeroPawn->Camera;
+			}
+		}
+	}
+
+	if (Camera && WidgetComponent)
+	{
+		FVector CameraLocation = Camera->GetComponentLocation();
+		FRotator LookAtRotation = (CameraLocation - WidgetComponent->GetComponentLocation()).Rotation();
+		WidgetComponent->SetWorldRotation(FRotator(0, LookAtRotation.Yaw, 0));
+	}
 }
 

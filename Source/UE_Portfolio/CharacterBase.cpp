@@ -3,22 +3,19 @@
 #include "AttackComponent.h"
 #include "Engine/DamageEvents.h"
 #include "Components/CapsuleComponent.h"
-#include "HealthComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 ACharacterBase::ACharacterBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("MyComponent"));
+	AttackComponent = CreateDefaultSubobject<UAttackComponent>(TEXT("Attack"));
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("Health"));
 }
 
 void ACharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
-
-	//HealthComponent = FindComponentByClass<UHealthComponent>();
-	AttackComponent = FindComponentByClass<UAttackComponent>();
 }
 
 void ACharacterBase::Tick(float DeltaTime)

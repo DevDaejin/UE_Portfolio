@@ -8,14 +8,14 @@ void UDashAnimNotifyState::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSe
 	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
 	if (AHeroPawn* Hero = Cast<AHeroPawn>(MeshComp->GetOwner()))
 	{
-		FVector Forward = Hero->GetActorForwardVector() * Hero->MoveDirection.Y;
-		FVector Right = Hero->GetActorRightVector() * Hero->MoveDirection.X;
-		Direction = (Forward + Right).GetSafeNormal();
+		//FVector Forward = Hero->GetActorForwardVector() * Hero->MoveDirection.Y;
+		//FVector Right = Hero->GetActorRightVector() * Hero->MoveDirection.X;
+		//Direction = (Forward + Right).GetSafeNormal();
 
-		Duriation = Hero->DashMontage->GetPlayLength();
-		InvincibleStartTime = Hero->InvincibleStartTime;
-		InvincibleEndTime = Hero->InvincibleEndTime;
-		Time = 0;
+		//Duriation = Hero->DashMontage->GetPlayLength();
+		//InvincibleStartTime = Hero->InvincibleStartTime;
+		//InvincibleEndTime = Hero->InvincibleEndTime;
+		//Time = 0;
 	}
 }
 

@@ -8,8 +8,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/DamageEvents.h"
 
-
-
 UAttackComponent::UAttackComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
@@ -86,11 +84,12 @@ void UAttackComponent::CheckWeaponCollision()
 		float LineTime = 2.0f;
 		DrawDebugLine(GetWorld(), Start, End, LineColor, false, LineTime);
 
-		if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_GameTraceChannel11, Params))
+		if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, Params))
 		{
 			ACharacterBase* CharacterBase = Cast<ACharacterBase>(HitResult.GetActor());
 			if (CharacterBase && !Enemies.Contains(CharacterBase))
 			{
+				UE_LOG(LogTemp, Display, TEXT("CharacterBase %s"), *CharacterBase->GetFName().ToString());
 				float Damage = Weapon->WeaponDamage;
 				FPointDamageEvent DamageEvent;
 				DamageEvent.HitInfo = HitResult;

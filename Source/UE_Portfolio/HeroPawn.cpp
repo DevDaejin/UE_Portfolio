@@ -23,10 +23,16 @@ void AHeroPawn::BeginPlay()
 	Super::BeginPlay();
 
 	SpringArm = FindComponentByClass<USpringArmComponent>();
-	SpringArmOriginRotation = SpringArm->GetRelativeRotation();
+	if (SpringArm)
+	{
+		SpringArmOriginRotation = SpringArm->GetRelativeRotation();
+	}
 
 	Camera = FindComponentByClass<UCameraComponent>();
-	AnimInstance = GetMesh()->GetAnimInstance();
+	if (Camera)
+	{
+		AnimInstance = GetMesh()->GetAnimInstance();
+	}
 
 	SetInputSubsystem();
 
