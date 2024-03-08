@@ -145,10 +145,10 @@ protected:
 
 	//LockOn
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
-	float DetectRadius = 250.f;
+	float DetectRadius = 1000.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
-	float DetectDistance = 3000.f;
+	float DetectDistance = 6000.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
 	bool bCanDashing = true;

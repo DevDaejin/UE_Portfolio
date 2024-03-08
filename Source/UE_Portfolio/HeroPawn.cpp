@@ -320,12 +320,18 @@ void AHeroPawn::LockOnTarget(const FInputActionInstance& Instance)
 
 		if (bHitted && HitResult.Num() > 0)
 		{
-			LockedOnTarget = HitResult[0].GetActor();
-
-			SpringArm->bUsePawnControlRotation = true;
-			SpringArm->bInheritYaw = true;
-
-			UE_LOG(LogTemp, Display, TEXT("e %s"), *LockedOnTarget->GetFName().ToString());
+			for (const FHitResult& Result : HitResult)
+			{
+				ACharacterBase* CharacterBase = Cast<ACharacterBase>(Result.GetActor());
+				if (CharacterBase)
+				{
+					UE_LOG(LogTemp, Display, TEXT("Elemnt : %s"), *Result.GetActor()->GetFName().ToString());
+					LockedOnTarget = CharacterBase;
+					SpringArm->bUsePawnControlRotation = true;
+					SpringArm->bInheritYaw = true;
+					break;
+				}
+			}
 		}
 	}
 }
@@ -339,40 +345,61 @@ void AHeroPawn::ChangeLockOn(const FInputActionInstance& Instance)
 		bool bHitted = DetectEnemy(HitResult);
 
 		UE_LOG(LogTemp, Display, TEXT("NUM : %d"), HitResult.Num());
+		for (const FHitResult Result : HitResult)
+		{
+			UE_LOG(LogTemp, Display, TEXT("%s"), *Result.GetActor()->GetFName().ToString());
+		}
 
 		if (bHitted && HitResult.Num() > 0)
 		{
-			for (const FHitResult Result : HitResult)
+			int32 CurrentTargetIndex = 0;
+			TArray<ACharacterBase*> CharacterBaseArray;
+			for (int32 i = 0; i < HitResult.Num(); i++)
 			{
-				UE_LOG(LogTemp, Display, TEXT("Elemnt : %s"), *Result.GetActor()->GetFName().ToString());
+				ACharacterBase* CharacterBase = Cast<ACharacterBase>(HitResult[i].GetActor());
+				if (CharacterBase)
+				{
+					CharacterBaseArray.Add(CharacterBase);
+					if (LockedOnTarget == HitResult[i].GetActor())
+					{
+						CurrentTargetIndex = CharacterBaseArray.Num();
+					}
+				}
 			}
 
-			int32 Index = (Instance.GetValue().Get<FVector>().X > 0) ? 1 : (HitResult.Num() - 1);
+			if (CharacterBaseArray.Num() > 0)
+			{
+				int32 Index = (Instance.GetValue().Get<FVector>().X > 0) ? 1 : -1;
+				Index += CurrentTargetIndex;
+				
+				if (Index < 0 )
+				{
+					Index = CharacterBaseArray.Num();
+				}
 
-			if (Index < 0)
-				Index = 0;
+				if (Index >= CharacterBaseArray.Num())
+				{
+					Index = 0;
+				}
 
-			if (Index >= HitResult.Num())
-				Index = HitResult.Num() - 1;
+				LockedOnTarget = CharacterBaseArray[Index];
+				CurrentTargetIndex = Index;
 
-			LockedOnTarget = HitResult[Index].GetActor();
-
-			UE_LOG(LogTemp, Display, TEXT("Index : %d Curret Target : %s"), Index, *LockedOnTarget->GetFName().ToString());
+				UE_LOG(LogTemp, Display, TEXT("Index : %d Curret Target : %s"), Index, *LockedOnTarget->GetFName().ToString());
+			}
 		}
 	}
 }
 
 bool AHeroPawn::DetectEnemy(TArray<FHitResult>& HitResult)
 {
-	FVector SphereStart = GetActorLocation();
-	FVector SphereEnd = SphereStart + (GetActorForwardVector() * DetectDistance);
-
-	FCollisionShape Sphere = FCollisionShape::MakeSphere(DetectRadius);
+	FVector SphereStart = Camera->GetComponentLocation();
+	FVector SphereEnd = SphereStart + (Camera->GetForwardVector() * DetectDistance);
 
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
 
-	//FVector TraceDistance = GetActorForwardVector() * DetectDistance;
+	FVector TraceDistance = Camera->GetForwardVector() * DetectDistance;
 
 	//DrawDebugSphere(  
 	//	GetWorld(),
@@ -381,7 +408,7 @@ bool AHeroPawn::DetectEnemy(TArray<FHitResult>& HitResult)
 	//	32,
 	//	FColor::Yellow,
 	//	false,
-	//	3);
+	//	.5f);
 
 	//DrawDebugSphere(
 	//	GetWorld(),
@@ -390,7 +417,7 @@ bool AHeroPawn::DetectEnemy(TArray<FHitResult>& HitResult)
 	//	32,
 	//	FColor::Yellow,
 	//	false,
-	//	3);
+	//	.5f);
 
 	//DrawDebugCapsule(
 	//	GetWorld(),
@@ -400,15 +427,15 @@ bool AHeroPawn::DetectEnemy(TArray<FHitResult>& HitResult)
 	//	FRotationMatrix::MakeFromZ(TraceDistance).ToQuat(),
 	//	FColor::Green,
 	//	false,
-	//	3.f);
-
+	//	.5f);
+	
 	return GetWorld()->SweepMultiByChannel(
 		HitResult,
 		SphereStart,
 		SphereEnd,
 		FQuat::Identity,
-		ECollisionChannel::ECC_GameTraceChannel1,
-		Sphere,
+		ECollisionChannel::ECC_GameTraceChannel2,
+		FCollisionShape::MakeSphere(DetectRadius),
 		Params);
 }
 

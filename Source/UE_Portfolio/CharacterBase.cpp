@@ -32,10 +32,10 @@ void ACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 float ACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-	
+
 	if (DamageAmount > 0.f &&
 		HealthComponent && 
-		HealthComponent->GetCurrentHP() == 0)
+		HealthComponent->GetCurrentHP() > 0)
 	{
 		HealthComponent->LostHP(DamageAmount);
 		FVector Impulse(0, 0, 0);

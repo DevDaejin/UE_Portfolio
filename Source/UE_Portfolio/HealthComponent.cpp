@@ -109,7 +109,7 @@ void UHealthComponent::UpdateHPBar()
 {
 	if (HPBar)
 	{
-		HPBar->UpdateHPBar(HP / MaxHP);
+		HPBar->UpdateHPBar((float)HP / (float)MaxHP);
 	}
 }
 

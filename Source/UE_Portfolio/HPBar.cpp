@@ -9,5 +9,10 @@ void UHPBar::UpdateHPBar(float percentage)
 	if (HPBar)
 	{
 		HPBar->SetPercent(percentage);
+
+		if (HPBar->GetPercent() <= 0)
+		{
+			HPBar->SetVisibility(ESlateVisibility::Hidden);
+		}
 	}
 }

@@ -25,7 +25,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSubclassOf<UUserWidget> HPBarSubclassOf;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+
 	UWidgetComponent* WidgetComponent;
 	UHPBar* HPBar;
 

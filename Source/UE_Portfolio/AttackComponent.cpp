@@ -70,7 +70,8 @@ void UAttackComponent::CheckWeaponCollision()
 		FVector Start = Weapon->MeshComponent->GetSocketLocation("StartPoint");
 		FVector End = Weapon->MeshComponent->GetSocketLocation("EndPoint");
 
-		FHitResult HitResult;
+		TArray<FHitResult> HitResult;
+		//FHitResult HitResult;
 		FCollisionQueryParams Params;
 
 		if(GetOwner())
@@ -79,25 +80,27 @@ void UAttackComponent::CheckWeaponCollision()
 		}
 		Params.AddIgnoredActor(Weapon);
 
-		bool bHit = HitResult.bBlockingHit;
-		FColor LineColor = bHit ? FColor::Green : FColor::Red;
 		float LineTime = 2.0f;
-		DrawDebugLine(GetWorld(), Start, End, LineColor, false, LineTime);
+		DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, LineTime);
 
-		if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, Params))
+		if (GetWorld()->LineTraceMultiByChannel(HitResult, Start, End, ECollisionChannel::ECC_GameTraceChannel2, Params))
 		{
-			ACharacterBase* CharacterBase = Cast<ACharacterBase>(HitResult.GetActor());
-			if (CharacterBase && !Enemies.Contains(CharacterBase))
+			UE_LOG(LogTemp, Display, TEXT("2"));
+			for (const FHitResult Hitted :HitResult)
 			{
-				UE_LOG(LogTemp, Display, TEXT("CharacterBase %s"), *CharacterBase->GetFName().ToString());
-				float Damage = Weapon->WeaponDamage;
-				FPointDamageEvent DamageEvent;
-				DamageEvent.HitInfo = HitResult;
-				DamageEvent.ShotDirection = (End - Start).GetSafeNormal();
-				DamageEvent.Damage = Damage;
+				ACharacterBase* CharacterBase = Cast<ACharacterBase>(Hitted.GetActor());
+				if (CharacterBase && !Enemies.Contains(CharacterBase))
+				{
+					UE_LOG(LogTemp, Display, TEXT("CharacterBase %s"), *CharacterBase->GetFName().ToString());
+					float Damage = Weapon->WeaponDamage;
+					FPointDamageEvent DamageEvent;
+					DamageEvent.HitInfo = Hitted;
+					DamageEvent.ShotDirection = (End - Start).GetSafeNormal();
+					DamageEvent.Damage = Damage;
 
-				CharacterBase->TakeDamage(Damage, DamageEvent, GetOwner()->GetInstigatorController(), Weapon);
-				Enemies.Add(CharacterBase);
+					CharacterBase->TakeDamage(Damage, DamageEvent, GetOwner()->GetInstigatorController(), Weapon);
+					Enemies.Add(CharacterBase);
+				}
 			}
 		}
 	}
