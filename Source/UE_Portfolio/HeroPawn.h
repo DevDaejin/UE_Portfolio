@@ -115,7 +115,10 @@ protected:
 	float MoveAmount = 1000;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
-	float RotateSpeed = 10;
+	float MoveRotationSpeed = 10;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
+	float LockOnRotationSpeed = 10;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
 	float LookingSenstive = 50;
@@ -145,7 +148,7 @@ protected:
 
 	//LockOn
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
-	float DetectRadius = 1000.f;
+	float DetectRadius = 2000;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
 	float DetectDistance = 6000.f;

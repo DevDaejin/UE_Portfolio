@@ -26,8 +26,6 @@ void AEnemyBase::BeginPlay()
 			}
 		}
 	}
-
-	Camera = 
 }
 
 void AEnemyBase::Tick(float DeltaTime)
@@ -59,8 +57,8 @@ void AEnemyBase::Tick(float DeltaTime)
 	}
 }
 
-void AEnemyBase::LockOn(bool bLcoked)
+void AEnemyBase::LockOn(bool Lock)
 {
-	this->bLcoked = bLcoked;
+	this->bLcoked = Lock;
 }
 

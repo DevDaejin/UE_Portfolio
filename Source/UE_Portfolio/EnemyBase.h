@@ -4,6 +4,7 @@
 #include "CharacterBase.h"
 #include "EnemyBase.generated.h"
 
+class UCameraComponent;
 class UWidgetComponent;
 
 UCLASS()

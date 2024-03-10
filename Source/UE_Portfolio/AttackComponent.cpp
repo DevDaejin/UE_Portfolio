@@ -85,7 +85,6 @@ void UAttackComponent::CheckWeaponCollision()
 
 		if (GetWorld()->LineTraceMultiByChannel(HitResult, Start, End, ECollisionChannel::ECC_GameTraceChannel2, Params))
 		{
-			UE_LOG(LogTemp, Display, TEXT("2"));
 			for (const FHitResult Hitted :HitResult)
 			{
 				ACharacterBase* CharacterBase = Cast<ACharacterBase>(Hitted.GetActor());

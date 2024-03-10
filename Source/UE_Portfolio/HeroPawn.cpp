@@ -221,7 +221,7 @@ void AHeroPawn::Move(const FInputActionInstance& Instance)
 				FRotator CalculatedRotation = FMath::RInterpTo(
 					Controller->GetControlRotation(),
 					Direction.Rotation(),
-					UGameplayStatics::GetWorldDeltaSeconds(this), RotateSpeed);
+					UGameplayStatics::GetWorldDeltaSeconds(this), MoveRotationSpeed);
 
 				Controller->SetControlRotation(CalculatedRotation);
 			}
@@ -314,23 +314,34 @@ void AHeroPawn::LockOnTarget(const FInputActionInstance& Instance)
 	}
 	else
 	{
-		TArray<FHitResult> HitResult;
+		TArray<FHitResult> HitResults;
 
-		bool bHitted = DetectEnemy(HitResult);
+		bool bHitted = DetectEnemy(HitResults);
 
-		if (bHitted && HitResult.Num() > 0)
+		if (bHitted && HitResults.Num() > 0)
 		{
-			for (const FHitResult& Result : HitResult)
+			float ClosestDistanceSqr = TNumericLimits<float>::Max();
+			ACharacterBase* ClosestTarget = nullptr;
+
+			for (const FHitResult& Result : HitResults)
 			{
-				ACharacterBase* CharacterBase = Cast<ACharacterBase>(Result.GetActor());
-				if (CharacterBase)
+				ACharacterBase* Target = Cast<ACharacterBase>(Result.GetActor());
+
+				if (Target)
 				{
-					UE_LOG(LogTemp, Display, TEXT("Elemnt : %s"), *Result.GetActor()->GetFName().ToString());
-					LockedOnTarget = CharacterBase;
-					SpringArm->bUsePawnControlRotation = true;
-					SpringArm->bInheritYaw = true;
-					break;
+					float DistanceSqr = (Target->GetActorLocation() - Camera->GetComponentLocation()).SizeSquared();
+					if (DistanceSqr < ClosestDistanceSqr)
+					{
+						ClosestDistanceSqr = DistanceSqr;
+						ClosestTarget = Target;
+					}
 				}
+			}
+			if (ClosestTarget)
+			{
+				SpringArm->bUsePawnControlRotation = true;
+				SpringArm->bInheritYaw = true;
+				LockedOnTarget = ClosestTarget;
 			}
 		}
 	}
@@ -340,52 +351,42 @@ void AHeroPawn::ChangeLockOn(const FInputActionInstance& Instance)
 {
 	if (LockedOnTarget)
 	{
-		TArray<FHitResult> HitResult;
+		TArray<FHitResult> HitResults;
 
-		bool bHitted = DetectEnemy(HitResult);
+		bool bHitted = DetectEnemy(HitResults);
 
-		UE_LOG(LogTemp, Display, TEXT("NUM : %d"), HitResult.Num());
-		for (const FHitResult Result : HitResult)
+		UE_LOG(LogTemp, Display, TEXT("NUM : %d"), HitResults.Num());
+		for (const FHitResult Result : HitResults)
 		{
 			UE_LOG(LogTemp, Display, TEXT("%s"), *Result.GetActor()->GetFName().ToString());
 		}
 
-		if (bHitted && HitResult.Num() > 0)
+		if (bHitted && HitResults.Num() > 0)
 		{
-			int32 CurrentTargetIndex = 0;
 			TArray<ACharacterBase*> CharacterBaseArray;
-			for (int32 i = 0; i < HitResult.Num(); i++)
+
+			for (const FHitResult& Result : HitResults)
 			{
-				ACharacterBase* CharacterBase = Cast<ACharacterBase>(HitResult[i].GetActor());
-				if (CharacterBase)
+				ACharacterBase* CharacterBase = Cast<ACharacterBase>(Result.GetActor());
+				if (CharacterBase && (CharacterBase != LockedOnTarget))
 				{
 					CharacterBaseArray.Add(CharacterBase);
-					if (LockedOnTarget == HitResult[i].GetActor())
-					{
-						CurrentTargetIndex = CharacterBaseArray.Num();
-					}
 				}
 			}
 
 			if (CharacterBaseArray.Num() > 0)
 			{
-				int32 Index = (Instance.GetValue().Get<FVector>().X > 0) ? 1 : -1;
-				Index += CurrentTargetIndex;
-				
-				if (Index < 0 )
+				int32 IndexChange = (Instance.GetValue().Get<FVector>().Z > 0) ? 1 : -1;
+				int32 CurrentTargetIndex = CharacterBaseArray.IndexOfByKey(LockedOnTarget);
+				//순환 조회 최대 갯수 단위로 나누고 나머지를 반환함으로 최댓값이 넘어도 정상 작동
+				int32 NextTargetIndex = (CurrentTargetIndex + IndexChange) % CharacterBaseArray.Num();
+				if (NextTargetIndex < 0)
 				{
-					Index = CharacterBaseArray.Num();
+					NextTargetIndex += CharacterBaseArray.Num();
 				}
 
-				if (Index >= CharacterBaseArray.Num())
-				{
-					Index = 0;
-				}
-
-				LockedOnTarget = CharacterBaseArray[Index];
-				CurrentTargetIndex = Index;
-
-				UE_LOG(LogTemp, Display, TEXT("Index : %d Curret Target : %s"), Index, *LockedOnTarget->GetFName().ToString());
+				LockedOnTarget = CharacterBaseArray[NextTargetIndex];
+				UE_LOG(LogTemp, Display, TEXT("New Lock-On Target: %s"), *LockedOnTarget->GetFName().ToString());
 			}
 		}
 	}
@@ -393,50 +394,34 @@ void AHeroPawn::ChangeLockOn(const FInputActionInstance& Instance)
 
 bool AHeroPawn::DetectEnemy(TArray<FHitResult>& HitResult)
 {
-	FVector SphereStart = Camera->GetComponentLocation();
-	FVector SphereEnd = SphereStart + (Camera->GetForwardVector() * DetectDistance);
+	FVector Start = Camera->GetComponentLocation();
+	FVector End = Start + (Camera->GetForwardVector() * DetectDistance);
 
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
 
-	FVector TraceDistance = Camera->GetForwardVector() * DetectDistance;
+	DrawDebugSphere(GetWorld(), Start, DetectRadius, 24, FColor::Yellow, false, 5.0f);
+	DrawDebugLine(GetWorld(), Start, End, FColor::Yellow, false, 5.0f);
+	DrawDebugSphere(GetWorld(), End, DetectRadius, 24, FColor::Yellow, false, 5.0f);
 
-	//DrawDebugSphere(  
-	//	GetWorld(),
-	//	SphereStart,
-	//	10,
-	//	32,
-	//	FColor::Yellow,
-	//	false,
-	//	.5f);
-
-	//DrawDebugSphere(
-	//	GetWorld(),
-	//	SphereEnd,
-	//	10,
-	//	32,
-	//	FColor::Yellow,
-	//	false,
-	//	.5f);
-
-	//DrawDebugCapsule(
-	//	GetWorld(),
-	//	SphereStart + (TraceDistance * 0.5f),
-	//	DetectDistance * 0.5f + DetectRadius,
-	//	DetectRadius,
-	//	FRotationMatrix::MakeFromZ(TraceDistance).ToQuat(),
-	//	FColor::Green,
-	//	false,
-	//	.5f);
-	
-	return GetWorld()->SweepMultiByChannel(
+	bool bHitted = GetWorld()->SweepMultiByChannel(
 		HitResult,
-		SphereStart,
-		SphereEnd,
+		Start,
+		End,
 		FQuat::Identity,
 		ECollisionChannel::ECC_GameTraceChannel2,
 		FCollisionShape::MakeSphere(DetectRadius),
 		Params);
+	
+	if (bHitted)
+	{
+		for (FHitResult R : HitResult)
+		{
+			UE_LOG(LogTemp, Display, TEXT("Hit, %s"), *R.GetActor()->GetFName().ToString());
+		}
+	}
+
+	return bHitted;
 }
 
 
@@ -473,8 +458,11 @@ void AHeroPawn::Tick(float DeltaTime)
 
 	if (LockedOnTarget)
 	{
-		FRotator LookAt = (LockedOnTarget->GetActorLocation() - GetActorLocation()).Rotation();
-		Controller->SetControlRotation(LookAt);
+		FVector Direction = LockedOnTarget->GetActorLocation() - GetActorLocation();
+		FRotator TargetRotation = Direction.Rotation();
+		FRotator CurrentRotation = Controller->GetControlRotation();
+		FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, LockOnRotationSpeed);
+		Controller->SetControlRotation(NewRotation);
 	}
 
 	if (!bCanDashing)
