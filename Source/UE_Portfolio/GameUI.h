@@ -4,17 +4,25 @@
 #include "Blueprint/UserWidget.h"
 #include "GameUI.generated.h"
 
+class UProgressBar;
+
 UCLASS()
 class UE_PORTFOLIO_API UGameUI : public UUserWidget
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(meta = (BindWidgetAnim))
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
 	UWidgetAnimation* Begin;
 
-	void PlayEnterdAnimation()
-	{
-		PlayAnimation(Begin);
-	}
+	UPROPERTY(meta = (BindWidget))
+	UProgressBar* HPBar;
+
+	UPROPERTY(meta = (BindWidget))
+	UProgressBar* StaminaBar;
+
+	void PlayEnterdAnimation();
+	UFUNCTION()
+	void UpdateHPBar(float percentage);
+	void UpdateStaminaBar(float percentage);
 };

@@ -1,17 +1,14 @@
 #include "HeroPawn.h"
 #include "HealthComponent.h"
 #include "AttackComponent.h"
+#include "MainPlayerController.h"
+#include "GameUI.h"
+#include "Engine/SkeletalMeshSocket.h"
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/CapsuleComponent.h"
-#include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Engine/SkeletalMeshSocket.h"
-#include "DrawDebugHelpers.h"
-#include "HealthComponent.h"
-#include "AttackComponent.h"
-#include "Kismet\KismetSystemLibrary.h"
 
 AHeroPawn::AHeroPawn()
 {
@@ -38,6 +35,16 @@ void AHeroPawn::BeginPlay()
 
 	CurrentStamina = MaxStamina;
 	OriginMeshYaw = GetMesh()->GetRelativeRotation().Yaw;
+
+	GameUI = Cast<AMainPlayerController>(Controller)->GameUI;
+
+	if (HealthComponen && GameUI)
+	{
+		HealthComponen->OnHPChanged.AddDynamic(GameUI, &UGameUI::UpdateHPBar);
+		HealthComponen->Full();
+	}
+
+	EarnStamina(MaxStamina);
 }
 
 void AHeroPawn::Jump()
@@ -68,6 +75,11 @@ void AHeroPawn::Landed(const FHitResult& Hit)
 	CurrentJumpCount = 0;
 }
 
+void AHeroPawn::UpdateStamina()
+{
+	GameUI->UpdateStaminaBar(CurrentStamina / MaxStamina);
+}
+
 void AHeroPawn::LostStamina(float amount)
 {
 	CurrentStamina -= amount;
@@ -78,11 +90,16 @@ void AHeroPawn::LostStamina(float amount)
 	}
 
 	bChargeStamina = false;
+
+	GetWorld()->GetTimerManager().ClearTimer(StaminaChargeTimeHandle);
+
 	GetWorld()->GetTimerManager().SetTimer(
 		StaminaChargeTimeHandle,
 		this,
 		&AHeroPawn::ChargeStamina,
 		RechargeTime);
+
+	UpdateStamina();
 }
 
 void AHeroPawn::EarnStamina(float amount)
@@ -93,6 +110,8 @@ void AHeroPawn::EarnStamina(float amount)
 	{
 		CurrentStamina = MaxStamina;
 	}
+
+	UpdateStamina();
 }
 
 void AHeroPawn::Attack()

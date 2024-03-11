@@ -10,7 +10,7 @@ ACharacterBase::ACharacterBase()
 	PrimaryActorTick.bCanEverTick = true;
 
 	AttackComponent = CreateDefaultSubobject<UAttackComponent>(TEXT("Attack"));
-	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("Health"));
+	HealthComponen = CreateDefaultSubobject<UHealthComponent>(TEXT("Health"));
 }
 
 void ACharacterBase::BeginPlay()
@@ -34,10 +34,10 @@ float ACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageE
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
 	if (DamageAmount > 0.f &&
-		HealthComponent && 
-		HealthComponent->GetCurrentHP() > 0)
+		HealthComponen && 
+		HealthComponen->GetCurrentHP() > 0)
 	{
-		HealthComponent->LostHP(DamageAmount);
+		HealthComponen->LostHP(DamageAmount);
 		FVector Impulse(0, 0, 0);
 
 		if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))

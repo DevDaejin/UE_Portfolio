@@ -8,6 +8,8 @@ class UHPBar;
 class UWidgetComponent;
 class UCameraComponent;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHPChanged, float, HP);
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UE_PORTFOLIO_API UHealthComponent : public UActorComponent
 {
@@ -34,6 +36,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 MaxHP;
+
+	FOnHPChanged OnHPChanged;
 
 	int32 GetCurrentHP();
 

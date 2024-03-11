@@ -26,7 +26,7 @@ public:
 	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UHealthComponent* HealthComponent;
+	UHealthComponent* HealthComponen;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UAttackComponent* AttackComponent;

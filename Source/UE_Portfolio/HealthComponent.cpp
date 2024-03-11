@@ -71,6 +71,8 @@ void UHealthComponent::EarnHP(int Amount)
 bool UHealthComponent::LostHP(int Amount)
 {
 	HP -= Amount;
+
+	UE_LOG(LogTemp, Display, TEXT("4 %d"), Amount);
 	if (HP <= 0)
 	{
 		Kill();
@@ -107,9 +109,15 @@ void UHealthComponent::LostMaxHP(int Amount)
 
 void UHealthComponent::UpdateHPBar()
 {
+	float percentage = (float)HP / (float)MaxHP;
 	if (HPBar)
 	{
-		HPBar->UpdateHPBar((float)HP / (float)MaxHP);
+		HPBar->UpdateHPBar(percentage);
+	}
+
+	if (OnHPChanged.IsBound())
+	{
+		OnHPChanged.Broadcast(percentage);
 	}
 }
 

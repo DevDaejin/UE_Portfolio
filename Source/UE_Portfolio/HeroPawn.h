@@ -9,6 +9,7 @@
 
 class USpringArmComponent;
 class UCameraComponent;
+class UGameUI;
 
 UCLASS()
 class UE_PORTFOLIO_API AHeroPawn : public ACharacterBase
@@ -59,6 +60,7 @@ protected:
 	virtual void Attack() override;
 	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
+	void UpdateStamina();
 	void LostStamina(float amount);
 	void EarnStamina(float amount);
 	void Dash();
@@ -105,10 +107,10 @@ protected:
 	float CurrentStamina = 100;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Stat")
-	float StaminaChargeAmount = .0001f;
+	float StaminaChargeAmount = 10.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
-	float RechargeTime = 1.f;
+	float RechargeTime = 2.f;
 
 	//Control
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Control")
@@ -178,4 +180,5 @@ private:
 	FRotator SpringArmOriginRotation;
 	
 	UAnimInstance* AnimInstance;
+	UGameUI* GameUI;
 };
