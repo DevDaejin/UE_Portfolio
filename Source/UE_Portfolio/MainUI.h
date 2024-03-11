@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "MainMenu.generated.h"
+#include "MainUI.generated.h"
 
 enum class EVisibleType : uint8
 {
@@ -17,7 +17,7 @@ enum class EVisibleType : uint8
 class UButton;
 
 UCLASS()
-class UE_PORTFOLIO_API UMainMenu : public UUserWidget
+class UE_PORTFOLIO_API UMainUI : public UUserWidget
 {
 	GENERATED_BODY()
 

@@ -1,11 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "MainMenu.h"
+#include "MainUI.h"
 #include "Components/Button.h"
 #include "Kismet/GameplayStatics.h"
 
-void UMainMenu::NativeConstruct()
+void UMainUI::NativeConstruct()
 {
 	Super::NativeConstruct();
 
@@ -18,31 +18,31 @@ void UMainMenu::NativeConstruct()
 
 	if (ValidateButton(MenuNewButton, TEXT("MenuQuitButton")))
 	{
-		MenuNewButton->OnClicked.AddDynamic(this, &UMainMenu::OnMenuNewButtonClicked);
+		MenuNewButton->OnClicked.AddDynamic(this, &UMainUI::OnMenuNewButtonClicked);
 	}
 
 	if (ValidateButton(MenuStartButton, TEXT("MenuStartButton")))
 	{//추 후 이전 게임 Load로
-		MenuStartButton->OnClicked.AddDynamic(this, &UMainMenu::OnMenuStartButtonClicked);
+		MenuStartButton->OnClicked.AddDynamic(this, &UMainUI::OnMenuStartButtonClicked);
 	}
 
 	if (ValidateButton(MenuOptionButton, TEXT("MenuOptionButton")))
 	{
-		MenuOptionButton->OnClicked.AddDynamic(this, &UMainMenu::OnMenuOptionButtonClicked);
+		MenuOptionButton->OnClicked.AddDynamic(this, &UMainUI::OnMenuOptionButtonClicked);
 	}
 
 	if (ValidateButton(MenuQuitButton, TEXT("MenuQuitButton")))
 	{
-		MenuQuitButton->OnClicked.AddDynamic(this, &UMainMenu::OnMenuQuitButtonClicked);
+		MenuQuitButton->OnClicked.AddDynamic(this, &UMainUI::OnMenuQuitButtonClicked);
 	}
 
 	if (ValidateButton(OptionQuitButton, TEXT("OptionQuitButton")))
 	{
-		OptionQuitButton->OnClicked.AddDynamic(this, &UMainMenu::OnOptionQuitButtonClicked);
+		OptionQuitButton->OnClicked.AddDynamic(this, &UMainUI::OnOptionQuitButtonClicked);
 	}
 }
 
-bool UMainMenu::ValidatePlayerController()
+bool UMainUI::ValidatePlayerController()
 {
 	if (!PlayerController)
 	{
@@ -52,7 +52,7 @@ bool UMainMenu::ValidatePlayerController()
 	return true;
 }
 
-bool UMainMenu::ValidateButton(UButton* Button, const FString& ButtonName)
+bool UMainUI::ValidateButton(UButton* Button, const FString& ButtonName)
 {
 	if (!Button)
 	{
@@ -62,7 +62,7 @@ bool UMainMenu::ValidateButton(UButton* Button, const FString& ButtonName)
 	return true;
 }
 
-void UMainMenu::OnMenuNewButtonClicked()
+void UMainUI::OnMenuNewButtonClicked()
 {
 	if (ValidatePlayerController())
 	{
@@ -70,7 +70,7 @@ void UMainMenu::OnMenuNewButtonClicked()
 	}
 }
 
-void UMainMenu::OnMenuStartButtonClicked()
+void UMainUI::OnMenuStartButtonClicked()
 {
 	if (ValidatePlayerController())
 	{
@@ -78,12 +78,12 @@ void UMainMenu::OnMenuStartButtonClicked()
 	}
 }
 
-void UMainMenu::OnMenuOptionButtonClicked()
+void UMainUI::OnMenuOptionButtonClicked()
 {
 	SetGroupVisibility(EVisibleType::MainGroupWithOption);
 }
 
-void UMainMenu::OnMenuQuitButtonClicked()
+void UMainUI::OnMenuQuitButtonClicked()
 {
 	if (ValidatePlayerController())
 	{
@@ -91,17 +91,17 @@ void UMainMenu::OnMenuQuitButtonClicked()
 	}
 }
 
-void UMainMenu::OnOptionConfirmButtonClicked()
+void UMainUI::OnOptionConfirmButtonClicked()
 {
 	SetGroupVisibility(EVisibleType::MenuGroup);
 }
 
-void UMainMenu::OnOptionQuitButtonClicked()
+void UMainUI::OnOptionQuitButtonClicked()
 {
 	SetGroupVisibility(EVisibleType::MenuGroup);
 }
 
-void UMainMenu::SetGroupVisibility(EVisibleType type)
+void UMainUI::SetGroupVisibility(EVisibleType type)
 {
 	switch (type)
 	{
