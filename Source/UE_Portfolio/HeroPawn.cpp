@@ -328,8 +328,17 @@ void AHeroPawn::LockOnTarget(const FInputActionInstance& Instance)
 	if (LockedOnTarget)
 	{
 		LockedOnTarget = nullptr;
-		SpringArm->bUsePawnControlRotation = false;
-		SpringArm->bInheritYaw = false;
+
+		if (SpringArm)
+		{
+			SpringArm->bUsePawnControlRotation = false;
+			SpringArm->bInheritYaw = false;
+		}
+
+		if (GameUI)
+		{
+			GameUI->DeactiveTarget();
+		}
 	}
 	else
 	{
@@ -486,15 +495,23 @@ void AHeroPawn::Tick(float DeltaTime)
 		if (GameUI)
 		{
 			FVector2D ScreenPosition;
-			APlayerController* PlayerController = Cast<APlayerController>(GetController());
-			bool bIsOnScreen = UGameplayStatics::ProjectWorldToScreen(
-				PlayerController,
-				LockedOnTarget->GetActorLocation(), 
-				ScreenPosition);
-
-			if (bIsOnScreen)
+			APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
+			
+			if (PlayerController)
 			{
-				GameUI->SetLockOnWidgetPosition(ScreenPosition);
+				bool bIsOnScreen = UGameplayStatics::ProjectWorldToScreen(
+					PlayerController,
+					LockedOnTarget->GetActorLocation(),
+					ScreenPosition);
+
+				if (bIsOnScreen)
+				{
+					FVector2D CurrentResolution;
+					GEngine->GameViewport->GetViewportSize(CurrentResolution);
+
+					ScreenPosition *= CurrentResolution.X / 1920.0f;
+					GameUI->SetLockOnWidgetPosition(ScreenPosition);
+				}
 			}
 		}
 	}

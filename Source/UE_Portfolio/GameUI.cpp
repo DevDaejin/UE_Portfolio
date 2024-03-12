@@ -22,11 +22,23 @@ void UGameUI::SetLockOnWidgetPosition(FVector2D& Position)
 {
 	if (Target)
 	{
-		Target->SetVisibility(ESlateVisibility::Collapsed);
-		UCanvasPanelSlot* CanvasSlot = Cast<UCanvasPanelSlot>(Target->Slot);
+		if (Target->GetVisibility() == ESlateVisibility::Hidden)
+		{
+			Target->SetVisibility(ESlateVisibility::Visible);
+		}
 
+		UCanvasPanelSlot* CanvasSlot = Cast<UCanvasPanelSlot>(Target->Slot);
 		if (CanvasSlot)
 		{
+			if (CanvasSlot->GetAnchors() != (FAnchors(0.5f, 0.5f)))
+			{
+				CanvasSlot->SetAnchors(FAnchors(0.5f, 0.5f));
+			}
+
+			if (CanvasSlot->GetAlignment() != (FVector2D(0.5f, 0.5f)))
+			{
+				CanvasSlot->SetAlignment(FVector2D(0.5f, 0.5f));
+			}
 			CanvasSlot->SetPosition(Position);
 		}
 	}
