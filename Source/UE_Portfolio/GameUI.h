@@ -4,6 +4,7 @@
 #include "Blueprint/UserWidget.h"
 #include "GameUI.generated.h"
 
+class UImage;
 class UProgressBar;
 
 UCLASS()
@@ -21,8 +22,13 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* StaminaBar;
 
+	UPROPERTY(meta = (BindWidget))
+	UImage* Target;
+
 	void PlayEnterdAnimation();
 	UFUNCTION()
 	void UpdateHPBar(float percentage);
 	void UpdateStaminaBar(float percentage);
+	void SetLockOnWidgetPosition(FVector2D& Position);
+	void DeactiveTarget();
 };

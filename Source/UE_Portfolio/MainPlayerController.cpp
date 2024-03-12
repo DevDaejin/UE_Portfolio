@@ -28,6 +28,7 @@ void AMainPlayerController::BeginPlay()
 	ShowGameUI(true);
 	GameUI->PlayEnterdAnimation();
 }
+
 void AMainPlayerController::ShowMainUI(bool bActive)
 {
 	//if (MainUI)

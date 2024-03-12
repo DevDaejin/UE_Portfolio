@@ -14,7 +14,7 @@ class UE_PORTFOLIO_API AMainPlayerController : public APlayerController
 
 public:
 	virtual void BeginPlay() override;
-	
+
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UUserWidget> MainUIWidget;
 	UPROPERTY(EditDefaultsOnly)

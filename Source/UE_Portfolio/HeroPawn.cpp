@@ -482,6 +482,21 @@ void AHeroPawn::Tick(float DeltaTime)
 		FRotator CurrentRotation = Controller->GetControlRotation();
 		FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, LockOnRotationSpeed);
 		Controller->SetControlRotation(NewRotation);
+
+		if (GameUI)
+		{
+			FVector2D ScreenPosition;
+			APlayerController* PlayerController = Cast<APlayerController>(GetController());
+			bool bIsOnScreen = UGameplayStatics::ProjectWorldToScreen(
+				PlayerController,
+				LockedOnTarget->GetActorLocation(), 
+				ScreenPosition);
+
+			if (bIsOnScreen)
+			{
+				GameUI->SetLockOnWidgetPosition(ScreenPosition);
+			}
+		}
 	}
 
 	if (!bCanDashing)
