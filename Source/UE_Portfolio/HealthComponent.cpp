@@ -27,7 +27,6 @@ void UHealthComponent::BeginPlay()
 			if (WidgetComponent)
 			{
 				WidgetComponent->SetWidget(WidgetInstance);
-
 				WidgetComponent->RegisterComponent();
 				WidgetComponent->AttachToComponent(GetOwner()->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 				WidgetComponent->SetRelativeLocation(FVector(0, 0, 130));

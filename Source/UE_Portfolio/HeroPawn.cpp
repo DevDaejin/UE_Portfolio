@@ -53,24 +53,20 @@ void AHeroPawn::BeginPlay()
 		UUserWidget* WidgetInstance = CreateWidget<UUserWidget>(GetWorld(), WidgetClass);
 		if (WidgetInstance)
 		{
-			TargetWidgetComponent = NewObject<UWidgetComponent>(GetOwner());
-			if(TargetWidgetComponent)
+			TargetWidgetComponent = NewObject<UWidgetComponent>(this);
+			if (TargetWidgetComponent)
 			{
 				TargetWidgetComponent->SetWidget(WidgetInstance);
-
 				TargetWidgetComponent->RegisterComponent();
-				TargetWidgetComponent->AttachToComponent(GetOwner()->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+				TargetWidgetComponent->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 				TargetWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
-				TargetWidgetComponent->SetVisibility(true);
+				TargetWidgetComponent->SetVisibility(false);
+
+				TargetWidgetComponent->SetRelativeLocation(FVector(0, 0, 130));
+				UE_LOG(LogTemp, Display, TEXT("123"));
 			}
 		}
 	}
-
-	if (!TargetWidgetComponent)
-	{
-		UE_LOG(LogTemp, Display, TEXT("asd"));
-	}
-
 }
 
 void AHeroPawn::Jump()
@@ -177,7 +173,7 @@ void AHeroPawn::Dash()
 		LostStamina(DashStaminaCost);
 
 		GetWorld()->GetTimerManager().SetTimer(
-			DashCooldownTimeHanlde, 
+			DashCooldownTimeHanlde,
 			this,
 			&AHeroPawn::ResetDashing,
 			DashMontage->GetPlayLength());
@@ -195,18 +191,18 @@ void AHeroPawn::DashTick(float DeltaTime)
 		FVector Location;
 		if (LockedOnTarget)
 		{
-			FVector Direction = 
+			FVector Direction =
 				GetActorForwardVector() * DashDirection.Y +
 				GetActorRightVector() * DashDirection.X;
 
-			Location = 
-				GetActorLocation() + 
+			Location =
+				GetActorLocation() +
 				(Direction * DashSpeed * DeltaTime / Duriation);
 		}
 		else
 		{
-			Location = 
-				GetActorLocation() + 
+			Location =
+				GetActorLocation() +
 				(GetActorForwardVector() * DashSpeed * DeltaTime / Duriation);
 		}
 
@@ -229,7 +225,7 @@ void AHeroPawn::DashTick(float DeltaTime)
 
 void AHeroPawn::ResetDashing()
 {
-	bCanDashing = true;	
+	bCanDashing = true;
 	GetMesh()->SetRelativeRotation(FRotator(0, OriginMeshYaw, 0).Quaternion());
 }
 
@@ -297,7 +293,7 @@ void AHeroPawn::Move(const FInputActionInstance& Instance)
 
 			else if (MoveDirection.X > 0)
 			{
-				if(!AnimInstance->Montage_IsPlaying(LockOnRightwardMontage))
+				if (!AnimInstance->Montage_IsPlaying(LockOnRightwardMontage))
 				{
 					AnimInstance->Montage_Play(LockOnRightwardMontage, LockOnRightwardMontage->GetPlayLength());
 				}
@@ -357,6 +353,7 @@ void AHeroPawn::LockOnTarget(const FInputActionInstance& Instance)
 
 		if (SpringArm)
 		{
+			SpringArm->AddRelativeRotation(GetActorRotation());
 			SpringArm->bUsePawnControlRotation = false;
 			SpringArm->bInheritYaw = false;
 		}
@@ -433,7 +430,6 @@ void AHeroPawn::ChangeLockOn(const FInputActionInstance& Instance)
 			{
 				int32 IndexChange = (Instance.GetValue().Get<FVector>().Z > 0) ? 1 : -1;
 				int32 CurrentTargetIndex = CharacterBaseArray.IndexOfByKey(LockedOnTarget);
-				//순환 조회 최대 갯수 단위로 나누고 나머지를 반환함으로 최댓값이 넘어도 정상 작동
 				int32 NextTargetIndex = (CurrentTargetIndex + IndexChange) % CharacterBaseArray.Num();
 				if (NextTargetIndex < 0)
 				{
@@ -467,7 +463,7 @@ bool AHeroPawn::DetectEnemy(TArray<FHitResult>& HitResult)
 		ECollisionChannel::ECC_GameTraceChannel2,
 		FCollisionShape::MakeSphere(DetectRadius),
 		Params);
-	
+
 	if (bHitted)
 	{
 		for (FHitResult R : HitResult)
@@ -518,6 +514,10 @@ void AHeroPawn::Tick(float DeltaTime)
 		FRotator CurrentRotation = Controller->GetControlRotation();
 		FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, LockOnRotationSpeed);
 		Controller->SetControlRotation(NewRotation);
+
+		FRotator NewSpringArmRotation = FMath::RInterpTo(SpringArm->GetRelativeRotation(), FRotator(-30, 0, 0), DeltaTime, LockOnRotationSpeed);
+		SpringArm->SetRelativeRotation(NewSpringArmRotation);
+
 		TargetWidgetComponent->SetWorldLocation(LockedOnTarget->GetActorLocation());
 		DrawDebugBox(GetWorld(), LockedOnTarget->GetActorLocation(), FVector(100, 100, 100), FColor::Blue);
 	}
@@ -526,6 +526,8 @@ void AHeroPawn::Tick(float DeltaTime)
 	{
 		DashTick(DeltaTime);
 	}
+
+	UE_LOG(LogTemp, Display, TEXT("SpringArm %s"), *SpringArm->GetRelativeRotation().ToString());
 }
 
 void AHeroPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
