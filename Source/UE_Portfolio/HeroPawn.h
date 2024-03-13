@@ -9,6 +9,7 @@
 
 class USpringArmComponent;
 class UCameraComponent;
+class UWidgetComponent;
 class UGameUI;
 
 UCLASS()
@@ -21,8 +22,11 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSubclassOf<UUserWidget> TargetWidget;
+	UWidgetComponent* TargetWidgetComponent;
+
 	//Animation
-	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
 	UAnimMontage* LockOnForwardMontage;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")

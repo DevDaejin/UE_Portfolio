@@ -22,13 +22,10 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* StaminaBar;
 
-	UPROPERTY(meta = (BindWidget))
-	UImage* Target;
-
 	void PlayEnterdAnimation();
+	
 	UFUNCTION()
 	void UpdateHPBar(float percentage);
+	UFUNCTION()
 	void UpdateStaminaBar(float percentage);
-	void SetLockOnWidgetPosition(FVector2D& Position);
-	void DeactiveTarget();
 };

@@ -8,6 +8,7 @@
 #include "Camera/CameraComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/WidgetComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 
 AHeroPawn::AHeroPawn()
@@ -45,6 +46,31 @@ void AHeroPawn::BeginPlay()
 	}
 
 	EarnStamina(MaxStamina);
+
+	UClass* WidgetClass = TargetWidget;
+	if (WidgetClass)
+	{
+		UUserWidget* WidgetInstance = CreateWidget<UUserWidget>(GetWorld(), WidgetClass);
+		if (WidgetInstance)
+		{
+			TargetWidgetComponent = NewObject<UWidgetComponent>(GetOwner());
+			if(TargetWidgetComponent)
+			{
+				TargetWidgetComponent->SetWidget(WidgetInstance);
+
+				TargetWidgetComponent->RegisterComponent();
+				TargetWidgetComponent->AttachToComponent(GetOwner()->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+				TargetWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
+				TargetWidgetComponent->SetVisibility(true);
+			}
+		}
+	}
+
+	if (!TargetWidgetComponent)
+	{
+		UE_LOG(LogTemp, Display, TEXT("asd"));
+	}
+
 }
 
 void AHeroPawn::Jump()
@@ -335,9 +361,9 @@ void AHeroPawn::LockOnTarget(const FInputActionInstance& Instance)
 			SpringArm->bInheritYaw = false;
 		}
 
-		if (GameUI)
+		if (TargetWidgetComponent)
 		{
-			GameUI->DeactiveTarget();
+			TargetWidgetComponent->SetVisibility(false);
 		}
 	}
 	else
@@ -369,6 +395,7 @@ void AHeroPawn::LockOnTarget(const FInputActionInstance& Instance)
 			{
 				SpringArm->bUsePawnControlRotation = true;
 				SpringArm->bInheritYaw = true;
+				TargetWidgetComponent->SetVisibility(true);
 				LockedOnTarget = ClosestTarget;
 			}
 		}
@@ -491,29 +518,8 @@ void AHeroPawn::Tick(float DeltaTime)
 		FRotator CurrentRotation = Controller->GetControlRotation();
 		FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, LockOnRotationSpeed);
 		Controller->SetControlRotation(NewRotation);
-
-		if (GameUI)
-		{
-			FVector2D ScreenPosition;
-			APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
-			
-			if (PlayerController)
-			{
-				bool bIsOnScreen = UGameplayStatics::ProjectWorldToScreen(
-					PlayerController,
-					LockedOnTarget->GetActorLocation(),
-					ScreenPosition);
-
-				if (bIsOnScreen)
-				{
-					FVector2D CurrentResolution;
-					GEngine->GameViewport->GetViewportSize(CurrentResolution);
-
-					ScreenPosition *= CurrentResolution.X / 1920.0f;
-					GameUI->SetLockOnWidgetPosition(ScreenPosition);
-				}
-			}
-		}
+		TargetWidgetComponent->SetWorldLocation(LockedOnTarget->GetActorLocation());
+		DrawDebugBox(GetWorld(), LockedOnTarget->GetActorLocation(), FVector(100, 100, 100), FColor::Blue);
 	}
 
 	if (!bCanDashing)
