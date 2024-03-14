@@ -30,6 +30,7 @@ void UHealthComponent::BeginPlay()
 				WidgetComponent->RegisterComponent();
 				WidgetComponent->AttachToComponent(GetOwner()->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 				WidgetComponent->SetRelativeLocation(FVector(0, 0, 130));
+				WidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
 			}
 		}
 	}

@@ -526,8 +526,6 @@ void AHeroPawn::Tick(float DeltaTime)
 	{
 		DashTick(DeltaTime);
 	}
-
-	UE_LOG(LogTemp, Display, TEXT("SpringArm %s"), *SpringArm->GetRelativeRotation().ToString());
 }
 
 void AHeroPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
