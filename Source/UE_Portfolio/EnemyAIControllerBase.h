@@ -13,6 +13,7 @@ class UE_PORTFOLIO_API AEnemyAIControllerBase : public AAIController
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UBehaviorTree* BehaviorTree;
