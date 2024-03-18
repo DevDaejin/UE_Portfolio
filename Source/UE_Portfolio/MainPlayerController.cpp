@@ -44,11 +44,5 @@ void AMainPlayerController::ShowGameUI(bool bActive)
 	{
 		GameUI->SetVisibility(
 			bActive ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
-
-		if(GameUI->GetVisibility() == ESlateVisibility::Hidden)
-			UE_LOG(LogTemp, Display, TEXT("HIdden"));
-
-		if (GameUI->GetVisibility() == ESlateVisibility::Visible)
-			UE_LOG(LogTemp, Display, TEXT("Visible"));
 	}
 }

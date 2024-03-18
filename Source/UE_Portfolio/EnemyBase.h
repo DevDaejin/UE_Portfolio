@@ -13,6 +13,15 @@ class UE_PORTFOLIO_API AEnemyBase : public ACharacterBase
 	GENERATED_BODY()
 	
 public:
+	UPROPERTY(EditAnywhere)
+	FVector PatrolPosition1;
+	UPROPERTY(EditAnywhere)
+	FVector PatrolPosition2;
+	UPROPERTY(EditAnywhere)
+	FVector DetectedLocation;
+	UPROPERTY(EditAnywhere)
+	bool bAttackable;
+
 
 protected:
 	virtual void BeginPlay() override;

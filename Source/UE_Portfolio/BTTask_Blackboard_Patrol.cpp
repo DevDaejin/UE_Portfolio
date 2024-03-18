@@ -10,7 +10,7 @@ EBTNodeResult::Type UBTTask_Blackboard_Patrol::ExecuteTask(UBehaviorTreeComponen
 {
 	if (AEnemyAIControllerBase* AIController = Cast<AEnemyAIControllerBase>(OwnerComp.GetAIOwner()))
 	{
-		UE_LOG(LogTemp, Display, TEXT("asd11"));
+		
 	}
 
 	return EBTNodeResult::Succeeded;

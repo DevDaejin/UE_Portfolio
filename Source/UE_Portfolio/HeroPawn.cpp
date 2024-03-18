@@ -61,9 +61,7 @@ void AHeroPawn::BeginPlay()
 				TargetWidgetComponent->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 				TargetWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
 				TargetWidgetComponent->SetVisibility(false);
-
 				TargetWidgetComponent->SetRelativeLocation(FVector(0, 0, 130));
-				UE_LOG(LogTemp, Display, TEXT("123"));
 			}
 		}
 	}
