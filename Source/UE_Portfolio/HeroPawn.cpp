@@ -10,6 +10,8 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+
 
 AHeroPawn::AHeroPawn()
 {
@@ -315,6 +317,11 @@ void AHeroPawn::StopMove()
 	if (LockedOnTarget && bCanInput)
 	{
 		AnimInstance->Montage_Stop(0.25f);
+	}
+	
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->StopMovementImmediately();
 	}
 }
 
