@@ -165,7 +165,7 @@ protected:
 
 private:
 	void SetInputSubsystem();
-
+	void SetLockedOnTargetHPBar(bool bIsAct = true);
 	UPROPERTY(VisibleAnywhere, Category = "Status")
 	int32 CurrentJumpCount = 0;
 

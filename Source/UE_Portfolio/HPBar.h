@@ -16,4 +16,11 @@ public:
 	UProgressBar* HPBar;
 
 	void UpdateHPBar(float percentage);
+	void SetHpBarVisible(bool bIsAct);
+	void AlwaysVisible(bool bIsAct);
+
+private:
+	FTimerHandle VisibleUpdateTimerHandle;
+	float Duriation = 1;
+	bool bAlwaysVisible;
 };

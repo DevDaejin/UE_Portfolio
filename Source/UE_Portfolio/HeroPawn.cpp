@@ -354,6 +354,7 @@ void AHeroPawn::LockOnTarget(const FInputActionInstance& Instance)
 {
 	if (LockedOnTarget)
 	{
+		SetLockedOnTargetHPBar(false);
 		LockedOnTarget = nullptr;
 
 		if (SpringArm)
@@ -398,7 +399,9 @@ void AHeroPawn::LockOnTarget(const FInputActionInstance& Instance)
 				SpringArm->bUsePawnControlRotation = true;
 				SpringArm->bInheritYaw = true;
 				TargetWidgetComponent->SetVisibility(true);
+
 				LockedOnTarget = ClosestTarget;
+				SetLockedOnTargetHPBar();
 			}
 		}
 	}
@@ -441,7 +444,9 @@ void AHeroPawn::ChangeLockOn(const FInputActionInstance& Instance)
 					NextTargetIndex += CharacterBaseArray.Num();
 				}
 
+				SetLockedOnTargetHPBar();
 				LockedOnTarget = CharacterBaseArray[NextTargetIndex];
+				SetLockedOnTargetHPBar(false);
 				UE_LOG(LogTemp, Display, TEXT("New Lock-On Target: %s"), *LockedOnTarget->GetFName().ToString());
 			}
 		}
@@ -503,6 +508,15 @@ void AHeroPawn::SetInputSubsystem()
 	}
 }
 
+void AHeroPawn::SetLockedOnTargetHPBar(bool bIsAct)
+{
+	ACharacterBase* CharacterBase = Cast<ACharacterBase>(LockedOnTarget);
+	if (CharacterBase)
+	{
+		CharacterBase->HealthComponen->SetHpBarVisible(bIsAct);
+	}
+}
+
 void AHeroPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -520,7 +534,7 @@ void AHeroPawn::Tick(float DeltaTime)
 		FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, LockOnRotationSpeed);
 		Controller->SetControlRotation(NewRotation);
 
-		FRotator NewSpringArmRotation = FMath::RInterpTo(SpringArm->GetRelativeRotation(), FRotator(-30, 0, 0), DeltaTime, LockOnRotationSpeed);
+		FRotator NewSpringArmRotation = FMath::RInterpTo(SpringArm->GetRelativeRotation(), FRotator(-20, 0, 0), DeltaTime, LockOnRotationSpeed);
 		SpringArm->SetRelativeRotation(NewSpringArmRotation);
 
 		TargetWidgetComponent->SetWorldLocation(LockedOnTarget->GetActorLocation());

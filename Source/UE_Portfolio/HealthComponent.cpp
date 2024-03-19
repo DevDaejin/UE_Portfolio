@@ -23,15 +23,17 @@ void UHealthComponent::BeginPlay()
 		if (WidgetInstance)
 		{
 			HPBar = Cast<UHPBar>(WidgetInstance);
-			WidgetComponent = NewObject<UWidgetComponent>(GetOwner());
-			if (WidgetComponent)
+			HpBarWidgetComponent = NewObject<UWidgetComponent>(GetOwner());
+			if (HpBarWidgetComponent)
 			{
-				WidgetComponent->SetWidget(WidgetInstance);
-				WidgetComponent->RegisterComponent();
-				WidgetComponent->AttachToComponent(GetOwner()->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
-				WidgetComponent->SetRelativeLocation(FVector(0, 0, 130));
-				WidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
+				HpBarWidgetComponent->SetWidget(WidgetInstance);
+				HpBarWidgetComponent->RegisterComponent();
+				HpBarWidgetComponent->AttachToComponent(GetOwner()->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+				HpBarWidgetComponent->SetRelativeLocation(FVector(0, 0, 130));
+				HpBarWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
 			}
+
+			HPBar->SetHpBarVisible(false);
 		}
 	}
 
@@ -149,11 +151,19 @@ void UHealthComponent::Billboarding()
 		}
 	}
 
-	if (Camera && WidgetComponent)
+	if (Camera && HpBarWidgetComponent)
 	{
 		FVector CameraLocation = Camera->GetComponentLocation();
-		FRotator LookAtRotation = (CameraLocation - WidgetComponent->GetComponentLocation()).Rotation();
-		WidgetComponent->SetWorldRotation(FRotator(0, LookAtRotation.Yaw, 0));
+		FRotator LookAtRotation = (CameraLocation - HpBarWidgetComponent->GetComponentLocation()).Rotation();
+		HpBarWidgetComponent->SetWorldRotation(FRotator(0, LookAtRotation.Yaw, 0));
+	}
+}
+
+void UHealthComponent::SetHpBarVisible(bool bIsVisible)
+{
+	if (HPBar)
+	{
+		HPBar->AlwaysVisible(bIsVisible);
 	}
 }
 

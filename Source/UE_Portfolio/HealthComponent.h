@@ -28,7 +28,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSubclassOf<UUserWidget> HPBarSubclassOf;
 
-	UWidgetComponent* WidgetComponent;
+	UWidgetComponent* HpBarWidgetComponent;
 	UHPBar* HPBar;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -49,5 +49,6 @@ public:
 	void Kill();
 	void Full();
 	void Billboarding();
+	void SetHpBarVisible(bool bIsVisible);
 	UCameraComponent* Camera;
 };
