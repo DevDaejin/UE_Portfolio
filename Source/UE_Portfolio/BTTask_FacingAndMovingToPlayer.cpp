@@ -10,39 +10,33 @@ UBTTask_FacingAndMovingToPlayer::UBTTask_FacingAndMovingToPlayer()
 
 EBTNodeResult::Type UBTTask_FacingAndMovingToPlayer::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
+	Super::ExecuteTask(OwnerComp, NodeMemory);
+
 	AAIController* AIController = OwnerComp.GetAIOwner();
-	if (!AIController)
-	{
-		return EBTNodeResult::Failed;
-	}
+	FVector AILocation = AIController->GetNavAgentLocation();
+	FVector TargetLocation =
+		OwnerComp.GetBlackboardComponent()->GetValueAsVector(GetSelectedBlackboardKey());
+	FRotator TargetRotation = (TargetLocation - AILocation).Rotation();
+	TargetRotation.Pitch = 0;
+	TargetRotation.Roll = 0;
 
-	APawn* Pawn = AIController->GetPawn();
-	if (!Pawn)
-	{
-		return EBTNodeResult::Failed;
-	}
-
-	FVector Destination = OwnerComp.GetBlackboardComponent()->GetValueAsVector(GetSelectedBlackboardKey());
-
-	FVector Direction = (Destination - Pawn->GetActorLocation()).GetUnsafeNormal();
-	FRotator CurrentRotation = Pawn->GetActorRotation();
-	FRotator TargetRotation = Direction.Rotation();
-	FRotator NewRotation = FRotator(CurrentRotation.Pitch, TargetRotation.Yaw, CurrentRotation.Roll);
-
-	Pawn->SetActorRotation(
-		FMath::RInterpTo(
-			CurrentRotation,
-			NewRotation,
-			GetWorld()->GetDeltaSeconds(),
-			RotationSpeed));
-
-	AIController->MoveToLocation(Destination, MovementSpeed, true, true, false, true, nullptr, true);
-	
-	float AcceptanceRadius = 100.0f;
-	if (FVector::DistSquared(Pawn->GetActorLocation(), Destination) <= FMath::Square(AcceptanceRadius))
+	if (AIController->GetControlRotation() == TargetRotation)
 	{
 		return EBTNodeResult::Succeeded;
 	}
+	else
+	{
+		FRotator NewRotation = FMath::RInterpTo(
+			AIController->GetControlRotation(), 
+			TargetRotation, 
+			GetWorld()->GetDeltaSeconds(), 
+			RotationSpeed);
 
-	return EBTNodeResult::InProgress;
+		UE_LOG(LogTemp, Display, TEXT("ai rot : %s"), *AIController->GetControlRotation().ToString());
+		UE_LOG(LogTemp, Display, TEXT("tar rot : %s"), *TargetRotation.ToString());
+
+		AIController->GetPawn()->SetActorRotation(NewRotation.Quaternion());
+
+		return EBTNodeResult::InProgress;
+	}
 }
