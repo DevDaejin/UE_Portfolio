@@ -18,8 +18,7 @@ void AEnemyAIControllerBase::BeginPlay()
 			AEnemyBase* EnemyBase = Cast<AEnemyBase>(GetPawn());
 			if (EnemyBase)
 			{
-				GetBlackboardComponent()->SetValueAsVector(TEXT("PatrolLocation1"), EnemyBase->PatrolPosition1);
-				GetBlackboardComponent()->SetValueAsVector(TEXT("PatrolLocation2"), EnemyBase->PatrolPosition2);
+
 			}
 		}
 	}
@@ -30,15 +29,15 @@ void AEnemyAIControllerBase::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 	RunBehaviorTree(BehaviorTree);
 
-	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
+	//APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
 
-	if (LineOfSightTo(PlayerPawn))
-	{
-		GetBlackboardComponent()->SetValueAsVector(TEXT("DetectedLocation"), PlayerPawn->GetActorLocation());
-		GetBlackboardComponent()->SetValueAsVector(TEXT("HeroPawnLocation"), PlayerPawn->GetActorLocation());
-	}
-	else
-	{
-		GetBlackboardComponent()->ClearValue(TEXT("HeroPawnLocation"));
-	}
+	//if (LineOfSightTo(PlayerPawn))
+	//{
+	//	GetBlackboardComponent()->SetValueAsVector(TEXT("DetectedLocation"), PlayerPawn->GetActorLocation());
+	//	GetBlackboardComponent()->SetValueAsVector(TEXT("HeroPawnLocation"), PlayerPawn->GetActorLocation());
+	//}
+	//else
+	//{
+	//	GetBlackboardComponent()->ClearValue(TEXT("HeroPawnLocation"));
+	//}
 }

@@ -14,9 +14,9 @@ class UE_PORTFOLIO_API AEnemyBase : public ACharacterBase
 	
 public:
 	UPROPERTY(EditAnywhere)
-	FVector PatrolPosition1;
+	FVector PatrolLocation1;
 	UPROPERTY(EditAnywhere)
-	FVector PatrolPosition2;
+	FVector PatrolLocation2;
 	UPROPERTY(EditAnywhere)
 	FVector DetectedLocation;
 	UPROPERTY(EditAnywhere)
