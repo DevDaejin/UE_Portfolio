@@ -1,23 +1,22 @@
-#include "BTTask_FacingAndMovingToPlayer.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
 #include "EnemyBase.h"
 #include "Navigation/PathFollowingComponent.h"
+#include "BTTask_Patrol.h"
 
-
-UBTTask_FacingAndMovingToPlayer::UBTTask_FacingAndMovingToPlayer()
+UBTTask_Patrol::UBTTask_Patrol()
 {
-	NodeName = TEXT("Facing and move to player");
+	NodeName = TEXT("Patrol");
 	bNotifyTick = true;
 }
 
-EBTNodeResult::Type UBTTask_FacingAndMovingToPlayer::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+EBTNodeResult::Type UBTTask_Patrol::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
 	Super::ExecuteTask(OwnerComp, NodeMemory);
 
 	AEnemyBase* EnemyBase = Cast<AEnemyBase>(OwnerComp.GetAIOwner()->GetPawn());
-	FVector Destination = OwnerComp.GetBlackboardComponent()->GetValueAsVector("PatrolLocation");
+	FVector Destination = OwnerComp.GetBlackboardComponent()->GetValueAsVector(GetSelectedBlackboardKey());
 	FVector Location1 = EnemyBase->PatrolLocation1;
 	FVector Location2 = EnemyBase->PatrolLocation2;
 
@@ -36,13 +35,13 @@ EBTNodeResult::Type UBTTask_FacingAndMovingToPlayer::ExecuteTask(UBehaviorTreeCo
 	}
 
 	Destination = NextLocation;
-	OwnerComp.GetBlackboardComponent()->SetValueAsVector("PatrolLocation", Destination);
+	OwnerComp.GetBlackboardComponent()->SetValueAsVector(GetSelectedBlackboardKey(), Destination);
 
 	bIsMoving = true;
 	return EBTNodeResult::InProgress;
 }
 
-void UBTTask_FacingAndMovingToPlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
+void UBTTask_Patrol::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
 	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
 	if (!bIsMoving) return;
@@ -52,7 +51,7 @@ void UBTTask_FacingAndMovingToPlayer::TickTask(UBehaviorTreeComponent& OwnerComp
 	if (!AIPawn) return;
 
 	UBlackboardComponent* Blackboard = AIController->GetBlackboardComponent();
-	FVector Destination = Blackboard->GetValueAsVector("PatrolLocation");
+	FVector Destination = Blackboard->GetValueAsVector(GetSelectedBlackboardKey());
 
 	FVector Direction = (Destination - AIPawn->GetActorLocation()).GetSafeNormal();
 	FRotator TargetRotator = Direction.Rotation();
