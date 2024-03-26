@@ -17,10 +17,6 @@ public:
 	FVector PatrolLocation1;
 	UPROPERTY(EditAnywhere)
 	FVector PatrolLocation2;
-	UPROPERTY(EditAnywhere)
-	FVector DetectedLocation;
-	UPROPERTY(EditAnywhere)
-	bool bAttackable;
 
 protected:
 	virtual void BeginPlay() override;

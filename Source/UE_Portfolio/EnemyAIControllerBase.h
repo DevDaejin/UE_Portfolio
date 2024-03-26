@@ -17,5 +17,4 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UBehaviorTree* BehaviorTree;
-	UBlackboardComponent* BlackboardComponent;
 };
