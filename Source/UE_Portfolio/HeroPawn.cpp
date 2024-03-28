@@ -67,6 +67,12 @@ void AHeroPawn::BeginPlay()
 			}
 		}
 	}
+
+	bUseControllerRotationYaw = true;
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationRoll = false;
+	GetCharacterMovement()->bUseControllerDesiredRotation = false;
+	GetCharacterMovement()->bOrientRotationToMovement = false;
 }
 
 void AHeroPawn::Jump()
@@ -139,7 +145,6 @@ void AHeroPawn::EarnStamina(float amount)
 void AHeroPawn::Attack()
 {
 	//Super::Attack();
-
 	if (AttackComponent &&
 		bCanInput &&
 		CurrentJumpCount == 0 &&
@@ -266,49 +271,14 @@ void AHeroPawn::Move(const FInputActionInstance& Instance)
 
 				Controller->SetControlRotation(CalculatedRotation);
 			}
-
-			AddMovementInput(Direction.GetSafeNormal(), 1);
 		}
 		else
 		{
 			ForwardDirection = FRotationMatrix(GetActorRotation()).GetUnitAxis(EAxis::X);
 			RightDirection = FRotationMatrix(GetActorRotation()).GetUnitAxis(EAxis::Y);
 			Direction = ForwardDirection * MoveDirection.Y + RightDirection * MoveDirection.X;
-
-			if (MoveDirection.Y > 0)
-			{
-				if (!AnimInstance->Montage_IsPlaying(LockOnForwardMontage))
-				{
-					AnimInstance->Montage_Play(LockOnForwardMontage, LockOnForwardMontage->GetPlayLength());
-				}
-			}
-
-			else if (MoveDirection.Y < 0)
-			{
-				if (!AnimInstance->Montage_IsPlaying(LockOnBackwardMontage))
-				{
-					AnimInstance->Montage_Play(LockOnBackwardMontage, LockOnBackwardMontage->GetPlayLength());
-				}
-			}
-
-			else if (MoveDirection.X > 0)
-			{
-				if (!AnimInstance->Montage_IsPlaying(LockOnRightwardMontage))
-				{
-					AnimInstance->Montage_Play(LockOnRightwardMontage, LockOnRightwardMontage->GetPlayLength());
-				}
-			}
-
-			else if (MoveDirection.X < 0)
-			{
-				if (!AnimInstance->Montage_IsPlaying(LockOnLeftwardMontage))
-				{
-					AnimInstance->Montage_Play(LockOnLeftwardMontage, LockOnLeftwardMontage->GetPlayLength());
-				}
-			}
-
-			AddMovementInput(Direction.GetSafeNormal(), 0.5f);
 		}
+		AddMovementInput(Direction.GetSafeNormal(), 1);
 	}
 }
 

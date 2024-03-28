@@ -31,26 +31,25 @@ void UAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 
 void UAttackComponent::Arm()
 {
-	APawn* Pawn = Cast<APawn>(GetOwner());
-	if (WeaponSubclass && Pawn)
-	{
-		FActorSpawnParameters Params;
-		Params.Owner = Pawn;
-		Params.Instigator = Pawn;
+	//APawn* Pawn = Cast<APawn>(GetOwner());
+	//if (WeaponSubclass && Pawn)
+	//{
+	//	FActorSpawnParameters Params;
+	//	Params.Owner = Pawn;
+	//	Params.Instigator = Pawn;
 
-		Weapon = GetWorld()->SpawnActor<AWeapon>(WeaponSubclass, FTransform::Identity, Params);
-		ACharacter* Character = Cast<ACharacter>(Pawn);
-		if (Weapon && Character)
-		{
-			Weapon->AttachToComponent(Character->GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("weapon_r_muzzle"));
-		}
-	}
+	//	Weapon = GetWorld()->SpawnActor<AWeapon>(WeaponSubclass, FTransform::Identity, Params);
+	//	ACharacter* Character = Cast<ACharacter>(Pawn);
+	//	if (Weapon && Character)
+	//	{
+	//		Weapon->AttachToComponent(Character->GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("weapon_r_muzzle"));
+	//	}
+	//}
 }
 
 void UAttackComponent::Attack()
 {
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
-
 	if (Character)
 	{
 		Enemies.Empty();
@@ -58,50 +57,51 @@ void UAttackComponent::Attack()
 		UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
 		if (AnimInstance && AttackMontage && !bIsAttacking)
 		{
-			AnimInstance->Montage_Play(AttackMontage, 1.f);
+			AnimInstance->Montage_Play(AttackMontage);
+			UE_LOG(LogTemp, Display, TEXT("asdddd %s"), AnimInstance->Montage_IsPlaying(AttackMontage) ? TEXT("T") : TEXT("F"));
 		}
 	}
 }
 
 void UAttackComponent::CheckWeaponCollision()
 {
-	if (Weapon)
-	{
-		FVector Start = Weapon->MeshComponent->GetSocketLocation("StartPoint");
-		FVector End = Weapon->MeshComponent->GetSocketLocation("EndPoint");
+	//if (Weapon)
+	//{
+	//	FVector Start = Weapon->MeshComponent->GetSocketLocation("FX_Sword_BeyondTip");
+	//	FVector End = Weapon->MeshComponent->GetSocketLocation("FX_Sword_HiltBase");
 
-		TArray<FHitResult> HitResult;
-		//FHitResult HitResult;
-		FCollisionQueryParams Params;
+	//	TArray<FHitResult> HitResult;
+	//	//FHitResult HitResult;
+	//	FCollisionQueryParams Params;
 
-		if(GetOwner())
-		{
-			Params.AddIgnoredActor(GetOwner());
-		}
-		Params.AddIgnoredActor(Weapon);
+	//	if(GetOwner())
+	//	{
+	//		Params.AddIgnoredActor(GetOwner());
+	//	}
+	//	Params.AddIgnoredActor(Weapon);
 
-		float LineTime = 2.0f;
-		DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, LineTime);
+	//	float LineTime = 2.0f;
+	//	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, LineTime);
 
-		if (GetWorld()->LineTraceMultiByChannel(HitResult, Start, End, ECollisionChannel::ECC_GameTraceChannel2, Params))
-		{
-			for (const FHitResult Hitted :HitResult)
-			{
-				ACharacterBase* CharacterBase = Cast<ACharacterBase>(Hitted.GetActor());
-				if (CharacterBase && !Enemies.Contains(CharacterBase))
-				{
-					UE_LOG(LogTemp, Display, TEXT("CharacterBase %s"), *CharacterBase->GetFName().ToString());
-					float Damage = Weapon->WeaponDamage;
-					FPointDamageEvent DamageEvent;
-					DamageEvent.HitInfo = Hitted;
-					DamageEvent.ShotDirection = (End - Start).GetSafeNormal();
-					DamageEvent.Damage = Damage;
+	//	if (GetWorld()->LineTraceMultiByChannel(HitResult, Start, End, ECollisionChannel::ECC_GameTraceChannel2, Params))
+	//	{
+	//		for (const FHitResult Hitted :HitResult)
+	//		{
+	//			ACharacterBase* CharacterBase = Cast<ACharacterBase>(Hitted.GetActor());
+	//			if (CharacterBase && !Enemies.Contains(CharacterBase))
+	//			{
+	//				UE_LOG(LogTemp, Display, TEXT("CharacterBase %s"), *CharacterBase->GetFName().ToString());
+	//				float Damage = Weapon->WeaponDamage;
+	//				FPointDamageEvent DamageEvent;
+	//				DamageEvent.HitInfo = Hitted;
+	//				DamageEvent.ShotDirection = (End - Start).GetSafeNormal();
+	//				DamageEvent.Damage = Damage;
 
-					CharacterBase->TakeDamage(Damage, DamageEvent, GetOwner()->GetInstigatorController(), Weapon);
-					Enemies.Add(CharacterBase);
-				}
-			}
-		}
-	}
+	//				CharacterBase->TakeDamage(Damage, DamageEvent, GetOwner()->GetInstigatorController(), Weapon);
+	//				Enemies.Add(CharacterBase);
+	//			}
+	//		}
+	//	}
+	//}
 }
 

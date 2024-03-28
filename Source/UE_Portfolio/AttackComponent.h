@@ -27,10 +27,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
 	UAnimMontage* AttackMontage;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ETC")
-	TSubclassOf<AWeapon> WeaponSubclass;
-	AWeapon* Weapon;
-
 private:
 	TSet<AActor*> Enemies;
 };
