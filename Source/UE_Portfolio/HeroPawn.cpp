@@ -252,7 +252,14 @@ void AHeroPawn::Move(const FInputActionInstance& Instance)
 		FVector RightDirection;
 		FVector Direction;
 
-		if (!LockedOnTarget)
+
+		if (LockedOnTarget)
+		{
+			ForwardDirection = FRotationMatrix(GetActorRotation()).GetUnitAxis(EAxis::X);
+			RightDirection = FRotationMatrix(GetActorRotation()).GetUnitAxis(EAxis::Y);
+			Direction = ForwardDirection * MoveDirection.Y + RightDirection * MoveDirection.X;
+		}
+		else
 		{
 			FRotator CameraRotator = SpringArm->GetRelativeRotation();
 			CameraRotator.Pitch = 0;
@@ -272,12 +279,9 @@ void AHeroPawn::Move(const FInputActionInstance& Instance)
 				Controller->SetControlRotation(CalculatedRotation);
 			}
 		}
-		else
-		{
-			ForwardDirection = FRotationMatrix(GetActorRotation()).GetUnitAxis(EAxis::X);
-			RightDirection = FRotationMatrix(GetActorRotation()).GetUnitAxis(EAxis::Y);
-			Direction = ForwardDirection * MoveDirection.Y + RightDirection * MoveDirection.X;
-		}
+
+		AnimInstance->StopAllMontages(0.2f);
+
 		AddMovementInput(Direction.GetSafeNormal(), 1);
 	}
 }

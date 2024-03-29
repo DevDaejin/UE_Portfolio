@@ -46,7 +46,10 @@ float ACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageE
 			Impulse = -(PointDamageEvent->ShotDirection);
 		}
 
-		Death(Impulse);
+		if (HealthComponen->GetCurrentHP() <= 0)
+		{
+			Death(Impulse);
+		}
 	}
 
 	return 0.0f;

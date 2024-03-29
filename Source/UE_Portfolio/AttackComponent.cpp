@@ -16,7 +16,6 @@ UAttackComponent::UAttackComponent()
 void UAttackComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	Arm();
 }
 
 void UAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -29,79 +28,78 @@ void UAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	}
 }
 
-void UAttackComponent::Arm()
-{
-	//APawn* Pawn = Cast<APawn>(GetOwner());
-	//if (WeaponSubclass && Pawn)
-	//{
-	//	FActorSpawnParameters Params;
-	//	Params.Owner = Pawn;
-	//	Params.Instigator = Pawn;
-
-	//	Weapon = GetWorld()->SpawnActor<AWeapon>(WeaponSubclass, FTransform::Identity, Params);
-	//	ACharacter* Character = Cast<ACharacter>(Pawn);
-	//	if (Weapon && Character)
-	//	{
-	//		Weapon->AttachToComponent(Character->GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("weapon_r_muzzle"));
-	//	}
-	//}
-}
-
 void UAttackComponent::Attack()
 {
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
 	if (Character)
 	{
 		Enemies.Empty();
-
+		OldFVectors.Empty();
+		CurrentFVectors.Empty();
+			
 		UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
 		if (AnimInstance && AttackMontage && !bIsAttacking)
 		{
 			AnimInstance->Montage_Play(AttackMontage);
-			UE_LOG(LogTemp, Display, TEXT("asdddd %s"), AnimInstance->Montage_IsPlaying(AttackMontage) ? TEXT("T") : TEXT("F"));
 		}
 	}
 }
 
 void UAttackComponent::CheckWeaponCollision()
 {
-	//if (Weapon)
-	//{
-	//	FVector Start = Weapon->MeshComponent->GetSocketLocation("FX_Sword_BeyondTip");
-	//	FVector End = Weapon->MeshComponent->GetSocketLocation("FX_Sword_HiltBase");
+	if (!CurrentFVectors.IsEmpty())
+	{
+		OldFVectors = CurrentFVectors;
+	}
 
-	//	TArray<FHitResult> HitResult;
-	//	//FHitResult HitResult;
-	//	FCollisionQueryParams Params;
+	CurrentFVectors.Empty();
 
-	//	if(GetOwner())
-	//	{
-	//		Params.AddIgnoredActor(GetOwner());
-	//	}
-	//	Params.AddIgnoredActor(Weapon);
+	if (WeaponTraceSegment < 2)
+	{
+		WeaponTraceSegment = 2;
+	}
 
-	//	float LineTime = 2.0f;
-	//	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, LineTime);
+	USkeletalMeshComponent* MeshComponent = GetOwner()->FindComponentByClass<USkeletalMeshComponent>();
 
-	//	if (GetWorld()->LineTraceMultiByChannel(HitResult, Start, End, ECollisionChannel::ECC_GameTraceChannel2, Params))
-	//	{
-	//		for (const FHitResult Hitted :HitResult)
-	//		{
-	//			ACharacterBase* CharacterBase = Cast<ACharacterBase>(Hitted.GetActor());
-	//			if (CharacterBase && !Enemies.Contains(CharacterBase))
-	//			{
-	//				UE_LOG(LogTemp, Display, TEXT("CharacterBase %s"), *CharacterBase->GetFName().ToString());
-	//				float Damage = Weapon->WeaponDamage;
-	//				FPointDamageEvent DamageEvent;
-	//				DamageEvent.HitInfo = Hitted;
-	//				DamageEvent.ShotDirection = (End - Start).GetSafeNormal();
-	//				DamageEvent.Damage = Damage;
+	FVector Start = MeshComponent->GetSocketLocation("FX_Sword_HiltBase");
+	FVector End = MeshComponent->GetSocketLocation("FX_Sword_BeyondTip");
 
-	//				CharacterBase->TakeDamage(Damage, DamageEvent, GetOwner()->GetInstigatorController(), Weapon);
-	//				Enemies.Add(CharacterBase);
-	//			}
-	//		}
-	//	}
-	//}
+	for (size_t i = 0; i < WeaponTraceSegment; i++)
+	{
+		CurrentFVectors.Add(FMath::Lerp(Start, End, (float)i / (float)WeaponTraceSegment));
+	}
+
+	if (OldFVectors.IsEmpty())
+	{
+		OldFVectors = CurrentFVectors;
+	}
+
+	TArray<FHitResult> HitResult;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(GetOwner());
+
+	for (size_t i = 0; i < WeaponTraceSegment; i++)
+	{
+		DrawDebugLine(GetWorld(), OldFVectors[i], CurrentFVectors[i], FColor::Red, false, 2.0f);
+
+		if (GetWorld()->LineTraceMultiByChannel(HitResult, OldFVectors[i], CurrentFVectors[i], ECollisionChannel::ECC_GameTraceChannel2, Params))
+		{
+			for (const FHitResult Hitted : HitResult)
+			{
+				ACharacterBase* CharacterBase = Cast<ACharacterBase>(Hitted.GetActor());
+				if (CharacterBase && !Enemies.Contains(CharacterBase))
+				{
+					UE_LOG(LogTemp, Display, TEXT("CharacterBase %s"), *CharacterBase->GetFName().ToString());
+					FPointDamageEvent DamageEvent;
+					DamageEvent.HitInfo = Hitted;
+					DamageEvent.ShotDirection = (End - Start).GetSafeNormal();
+					DamageEvent.Damage = Damage;
+
+					CharacterBase->TakeDamage(Damage, DamageEvent, GetOwner()->GetInstigatorController(), GetOwner());
+					Enemies.Add(CharacterBase);
+				}
+			}
+		}
+	}
 }
 

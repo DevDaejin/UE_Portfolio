@@ -74,7 +74,6 @@ bool UHealthComponent::LostHP(int Amount)
 {
 	HP -= Amount;
 
-	UE_LOG(LogTemp, Display, TEXT("4 %d"), Amount);
 	if (HP <= 0)
 	{
 		Kill();

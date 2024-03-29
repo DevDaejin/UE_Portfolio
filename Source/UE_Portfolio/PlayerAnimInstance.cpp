@@ -1,6 +1,7 @@
 #include "PlayerAnimInstance.h"
 #include "HeroPawn.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 //Begin
 void UPlayerAnimInstance::NativeInitializeAnimation()
@@ -21,6 +22,8 @@ void UPlayerAnimInstance::UpdateAnimationProperties(float DeltaTime)
 	FVector Velocity = HeroPawn->GetVelocity();
 	Velocity.Z = 0;
 	Speed = Velocity.Size();
+
+	bIsFalling = HeroPawn->GetCharacterMovement()->IsFalling();
 
 	FRotator PlayerAimRotation = HeroPawn->GetBaseAimRotation();
 	FRotator MovementRotation = UKismetMathLibrary::MakeRotFromX(HeroPawn->GetVelocity());

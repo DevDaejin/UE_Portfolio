@@ -19,7 +19,6 @@ protected:
 
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-	void Arm();
 	void Attack();
 	void CheckWeaponCollision();
 	bool bIsAttacking;
@@ -28,5 +27,13 @@ public:
 	UAnimMontage* AttackMontage;
 
 private:
-	TSet<AActor*> Enemies;
+	TArray<AActor*> Enemies;
+	TArray<FVector> OldFVectors;
+	TArray<FVector> CurrentFVectors;
+
+	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"))
+	int WeaponTraceSegment = 1;
+	int MinWeaponTraceSegment = 2;
+	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"))
+	float Damage = 10;
 };
