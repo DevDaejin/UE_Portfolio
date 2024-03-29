@@ -54,9 +54,9 @@ void UAttackComponent::CheckWeaponCollision()
 
 	CurrentFVectors.Empty();
 
-	if (WeaponTraceSegment < 2)
+	if (WeaponTraceSegment < MinWeaponTraceSegment)
 	{
-		WeaponTraceSegment = 2;
+		WeaponTraceSegment = MinWeaponTraceSegment;
 	}
 
 	USkeletalMeshComponent* MeshComponent = GetOwner()->FindComponentByClass<USkeletalMeshComponent>();
