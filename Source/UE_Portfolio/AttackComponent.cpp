@@ -28,7 +28,7 @@ void UAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	}
 }
 
-void UAttackComponent::Attack()
+void UAttackComponent::AttackBase(UAnimMontage* AnimMontage)
 {
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
 	if (Character)
@@ -36,13 +36,23 @@ void UAttackComponent::Attack()
 		Enemies.Empty();
 		OldFVectors.Empty();
 		CurrentFVectors.Empty();
-			
+
 		UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
-		if (AnimInstance && AttackMontage && !bIsAttacking)
+		if (AnimInstance && AnimMontage && !bIsAttacking)
 		{
-			AnimInstance->Montage_Play(AttackMontage);
+			AnimInstance->Montage_Play(AnimMontage);
 		}
 	}
+}
+
+void UAttackComponent::NormalAttack()
+{
+	AttackBase(NormalAttackMontage);
+}
+
+void UAttackComponent::ChargedAttack()
+{
+	AttackBase(ChargedAttackMontage);
 }
 
 void UAttackComponent::CheckWeaponCollision()

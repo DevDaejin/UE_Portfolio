@@ -19,12 +19,16 @@ protected:
 
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-	void Attack();
+	void AttackBase(UAnimMontage* AnimMontage);
+	void NormalAttack();
+	void ChargedAttack();
 	void CheckWeaponCollision();
 	bool bIsAttacking;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-	UAnimMontage* AttackMontage;
+	UAnimMontage* NormalAttackMontage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	UAnimMontage* ChargedAttackMontage;
 
 private:
 	TArray<AActor*> Enemies;

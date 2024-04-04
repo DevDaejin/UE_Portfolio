@@ -52,7 +52,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void Jump() override;
 	virtual void Landed(const FHitResult& Hit) override;
-	virtual void Attack() override;
+	virtual void NormalAttack() override;
 	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 	void UpdateStamina();
@@ -162,6 +162,8 @@ private:
 
 	FTimerHandle StaminaChargeTimeHandle;
 	FTimerHandle DashCooldownTimeHanlde;
+	FTimerHandle ChargingTimeHanlde;
+	float ChargingTime = 1.f;
 
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
 	float MinPitchAngle = -85;
@@ -176,4 +178,9 @@ private:
 	
 	UAnimInstance* AnimInstance;
 	UGameUI* GameUI;
+
+	//TODO:Delete it, just testing code
+	void PressedSudo();
+	void PressingSudo();
+	void ReleasedSudo();
 };

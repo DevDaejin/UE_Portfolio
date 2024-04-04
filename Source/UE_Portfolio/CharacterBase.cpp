@@ -82,7 +82,7 @@ void ACharacterBase::Death(FVector ForceDirection)
 	}
 }
 
-void ACharacterBase::Attack()
+void ACharacterBase::NormalAttack()
 {
-	AttackComponent->Attack();
+	AttackComponent->NormalAttack();
 }

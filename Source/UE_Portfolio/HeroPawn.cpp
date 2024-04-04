@@ -119,9 +119,9 @@ void AHeroPawn::LostStamina(float amount)
 
 	bChargeStamina = false;
 
-	GetWorld()->GetTimerManager().ClearTimer(StaminaChargeTimeHandle);
+	GetWorldTimerManager().ClearTimer(StaminaChargeTimeHandle);
 
-	GetWorld()->GetTimerManager().SetTimer(
+	GetWorldTimerManager().SetTimer(
 		StaminaChargeTimeHandle,
 		this,
 		&AHeroPawn::ChargeStamina,
@@ -142,7 +142,7 @@ void AHeroPawn::EarnStamina(float amount)
 	UpdateStamina();
 }
 
-void AHeroPawn::Attack()
+void AHeroPawn::NormalAttack()
 {
 	//Super::Attack();
 	if (AttackComponent &&
@@ -152,7 +152,7 @@ void AHeroPawn::Attack()
 	{
 		bCanInput = false;
 		LostStamina(AttackStaminaCost);
-		AttackComponent->Attack();
+		AttackComponent->NormalAttack();
 	}
 }
 
@@ -177,7 +177,7 @@ void AHeroPawn::Dash()
 
 		LostStamina(DashStaminaCost);
 
-		GetWorld()->GetTimerManager().SetTimer(
+		GetWorldTimerManager().SetTimer(
 			DashCooldownTimeHanlde,
 			this,
 			&AHeroPawn::ResetDashing,
@@ -491,6 +491,22 @@ void AHeroPawn::SetLockedOnTargetHPBar(bool bIsAct)
 	}
 }
 
+void AHeroPawn::PressedSudo()
+{
+	//UE_LOG(LogTemp, Display, TEXT("Pressed : %f"), ChargingTime);
+	GetWorldTimerManager().SetTimer(ChargingTimeHanlde, this, &AHeroPawn::AttackComponent->ChargedAttack,)
+}
+
+void AHeroPawn::PressingSudo()
+{
+	//UE_LOG(LogTemp, Display, TEXT("Pressing : %f"), ChargingTime);
+}
+
+void AHeroPawn::ReleasedSudo()
+{
+	//UE_LOG(LogTemp, Display, TEXT("Released : %f"), ChargingTime);
+}
+
 void AHeroPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -534,8 +550,13 @@ void AHeroPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 		Input->BindAction(IA_Movement, ETriggerEvent::Triggered, this, &AHeroPawn::Move);
 		Input->BindAction(IA_Movement, ETriggerEvent::Completed, this, &AHeroPawn::StopMove);
 		Input->BindAction(IA_Looking, ETriggerEvent::Triggered, this, &AHeroPawn::Look);
-		Input->BindAction(IA_Attack, ETriggerEvent::Started, this, &AHeroPawn::Attack);
+		//Input->BindAction(IA_Attack, ETriggerEvent::Started, this, &AHeroPawn::NormalAttack);
 		Input->BindAction(IA_LockOn, ETriggerEvent::Started, this, &AHeroPawn::LockOnTarget);
 		Input->BindAction(IA_ChangeLockOn, ETriggerEvent::Started, this, &AHeroPawn::ChangeLockOn);
+
+		//TODO: Delete it, Just testing code;
+		Input->BindAction(IA_Attack, ETriggerEvent::Started, this, &AHeroPawn::PressedSudo);
+		Input->BindAction(IA_Attack, ETriggerEvent::Triggered, this, &AHeroPawn::PressingSudo);
+		Input->BindAction(IA_Attack, ETriggerEvent::Completed, this, &AHeroPawn::ReleasedSudo);
 	}
 }
