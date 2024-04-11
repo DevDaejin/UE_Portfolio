@@ -145,7 +145,7 @@ void UHealthComponent::Billboarding()
 			AHeroPawn* HeroPawn = Cast<AHeroPawn>(GetWorld()->GetFirstPlayerController()->GetPawn());
 			if (HeroPawn)
 			{
-				Camera = HeroPawn->Camera;
+				Camera = HeroPawn->GetCamera();
 			}
 		}
 	}

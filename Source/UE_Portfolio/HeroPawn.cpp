@@ -3,10 +3,9 @@
 #include "AttackComponent.h"
 #include "MainPlayerController.h"
 #include "GameUI.h"
-#include "Engine/SkeletalMeshSocket.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraComponent.h"
-#include "Components/SkeletalMeshComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -21,33 +20,30 @@ AHeroPawn::AHeroPawn()
 void AHeroPawn::BeginPlay()
 {
 	Super::BeginPlay();
+	SetInputSubsystem();
 
+//Caching
+	GameUI = Cast<AMainPlayerController>(Controller)->GameUI;
+	Camera = FindComponentByClass<UCameraComponent>();
 	SpringArm = FindComponentByClass<USpringArmComponent>();
+	AnimInstance = GetMesh()->GetAnimInstance();
+
+//Camera
 	if (SpringArm)
 	{
 		SpringArmOriginRotation = SpringArm->GetRelativeRotation();
 	}
-
-	Camera = FindComponentByClass<UCameraComponent>();
-	if (Camera)
-	{
-		AnimInstance = GetMesh()->GetAnimInstance();
-	}
-
-	SetInputSubsystem();
-
-	CurrentStamina = MaxStamina;
+	
+//Dash
 	OriginMeshYaw = GetMesh()->GetRelativeRotation().Yaw;
 
-	GameUI = Cast<AMainPlayerController>(Controller)->GameUI;
+//LockOn
+	bUseControllerRotationYaw = true;
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationRoll = false;
 
-	if (HealthComponen && GameUI)
-	{
-		HealthComponen->OnHPChanged.AddDynamic(GameUI, &UGameUI::UpdateHPBar);
-		HealthComponen->Full();
-	}
-
-	EarnStamina(MaxStamina);
+	GetCharacterMovement()->bUseControllerDesiredRotation = false;
+	GetCharacterMovement()->bOrientRotationToMovement = false;
 
 	UClass* WidgetClass = TargetWidget;
 	if (WidgetClass)
@@ -68,11 +64,71 @@ void AHeroPawn::BeginPlay()
 		}
 	}
 
-	bUseControllerRotationYaw = true;
-	bUseControllerRotationPitch = false;
-	bUseControllerRotationRoll = false;
-	GetCharacterMovement()->bUseControllerDesiredRotation = false;
-	GetCharacterMovement()->bOrientRotationToMovement = false;
+//Health
+	if (HealthComponen && GameUI)
+	{
+		HealthComponen->OnHPChanged.AddDynamic(GameUI, &UGameUI::UpdateHPBar);
+		HealthComponen->Full();
+	}
+
+//Stamina
+	EarnStamina(MaxStamina);
+
+}
+
+void AHeroPawn::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (bChargeStamina)
+	{
+		EarnStamina(StaminaChargeAmount * DeltaTime);
+	}
+
+	if (LockedOnTarget)
+	{
+		FVector Direction = LockedOnTarget->GetActorLocation() - GetActorLocation();
+		FRotator TargetRotation = Direction.Rotation();
+		FRotator CurrentRotation = Controller->GetControlRotation();
+		FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, LockOnRotationSpeed);
+		Controller->SetControlRotation(NewRotation);
+
+		FRotator NewSpringArmRotation = FMath::RInterpTo(SpringArm->GetRelativeRotation(), FRotator(-20, 0, 0), DeltaTime, LockOnRotationSpeed);
+		SpringArm->SetRelativeRotation(NewSpringArmRotation);
+
+		TargetWidgetComponent->SetWorldLocation(LockedOnTarget->GetActorLocation());
+		DrawDebugBox(GetWorld(), LockedOnTarget->GetActorLocation(), FVector(100, 100, 100), FColor::Blue);
+	}
+
+	if (!bCanDashing)
+	{
+		DashTick(DeltaTime);
+	}
+}
+
+void AHeroPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	UEnhancedInputComponent* Input = Cast<UEnhancedInputComponent>(PlayerInputComponent);
+
+	if (Input)
+	{
+		Input->BindAction(IA_Jump, ETriggerEvent::Started, this, &AHeroPawn::Jump);
+		Input->BindAction(IA_Dash, ETriggerEvent::Started, this, &AHeroPawn::Dash);
+
+		Input->BindAction(IA_Movement, ETriggerEvent::Triggered, this, &AHeroPawn::Move);
+		Input->BindAction(IA_Movement, ETriggerEvent::Completed, this, &AHeroPawn::StopMove);
+
+		Input->BindAction(IA_Looking, ETriggerEvent::Triggered, this, &AHeroPawn::Look);
+		Input->BindAction(IA_LockOn, ETriggerEvent::Started, this, &AHeroPawn::LockOnTarget);
+
+		Input->BindAction(IA_ChangeLockOn, ETriggerEvent::Started, this, &AHeroPawn::ChangeLockOn);
+
+		Input->BindAction(IA_Attack, ETriggerEvent::Started, this, &AHeroPawn::AttackPressed);
+		Input->BindAction(IA_Attack, ETriggerEvent::Triggered, this, &AHeroPawn::AttackPressing);
+		Input->BindAction(IA_Attack, ETriggerEvent::Completed, this, &AHeroPawn::AttackReleased);
+	}
 }
 
 void AHeroPawn::Jump()
@@ -103,63 +159,100 @@ void AHeroPawn::Landed(const FHitResult& Hit)
 	CurrentJumpCount = 0;
 }
 
-void AHeroPawn::UpdateStamina()
-{
-	GameUI->UpdateStaminaBar(CurrentStamina / MaxStamina);
-}
-
-void AHeroPawn::LostStamina(float amount)
-{
-	CurrentStamina -= amount;
-
-	if (CurrentStamina < 0)
-	{
-		CurrentStamina = 0;
-	}
-
-	bChargeStamina = false;
-
-	GetWorldTimerManager().ClearTimer(StaminaChargeTimeHandle);
-
-	GetWorldTimerManager().SetTimer(
-		StaminaChargeTimeHandle,
-		this,
-		&AHeroPawn::ChargeStamina,
-		RechargeTime);
-
-	UpdateStamina();
-}
-
-void AHeroPawn::EarnStamina(float amount)
-{
-	CurrentStamina += amount;
-
-	if (CurrentStamina > MaxStamina)
-	{
-		CurrentStamina = MaxStamina;
-	}
-
-	UpdateStamina();
-}
-
-void AHeroPawn::NormalAttack()
-{
-	//Super::Attack();
-	if (AttackComponent &&
-		bCanInput &&
-		CurrentJumpCount == 0 &&
-		CurrentStamina >= AttackStaminaCost)
-	{
-		bCanInput = false;
-		LostStamina(AttackStaminaCost);
-		AttackComponent->NormalAttack();
-	}
-}
-
 float AHeroPawn::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	return 0.0f;
+}
+
+UCameraComponent* AHeroPawn::GetCamera()
+{
+	return Camera;
+}
+
+void AHeroPawn::Move(const FInputActionInstance& Instance)
+{
+	MoveDirection = FVector(
+		Instance.GetValue().Get<FVector2D>().GetSafeNormal().X,
+		Instance.GetValue().Get<FVector2D>().GetSafeNormal().Y,
+		0);
+
+	if (bCanInput && Controller)
+	{
+		FVector ForwardDirection;
+		FVector RightDirection;
+		FVector Direction;
+
+
+		if (LockedOnTarget)
+		{
+			ForwardDirection = FRotationMatrix(GetActorRotation()).GetUnitAxis(EAxis::X);
+			RightDirection = FRotationMatrix(GetActorRotation()).GetUnitAxis(EAxis::Y);
+			Direction = ForwardDirection * MoveDirection.Y + RightDirection * MoveDirection.X;
+		}
+		else
+		{
+			FRotator CameraRotator = SpringArm->GetRelativeRotation();
+			CameraRotator.Pitch = 0;
+			CameraRotator.Roll = 0;
+
+			ForwardDirection = FRotationMatrix(CameraRotator).GetUnitAxis(EAxis::X);
+			RightDirection = FRotationMatrix(CameraRotator).GetUnitAxis(EAxis::Y);
+			Direction = ForwardDirection * MoveDirection.Y + RightDirection * MoveDirection.X;
+
+			if (!Direction.IsNearlyZero())
+			{
+				FRotator CalculatedRotation = FMath::RInterpTo(
+					Controller->GetControlRotation(),
+					Direction.Rotation(),
+					UGameplayStatics::GetWorldDeltaSeconds(this), MoveRotationSpeed);
+
+				Controller->SetControlRotation(CalculatedRotation);
+			}
+		}
+
+		AnimInstance->StopAllMontages(0.2f);
+
+		AddMovementInput(Direction.GetSafeNormal(), 1);
+	}
+}
+
+void AHeroPawn::StopMove()
+{
+	if (LockedOnTarget && bCanInput)
+	{
+		AnimInstance->Montage_Stop(0.25f);
+	}
+
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->StopMovementImmediately();
+	}
+}
+
+void AHeroPawn::Look(const FInputActionInstance& Instance)
+{
+	if (!LockedOnTarget)
+	{
+		FVector2D LookVector = Instance.GetValue().Get<FVector2D>();
+		LookVector.X *= (UGameplayStatics::GetWorldDeltaSeconds(this) * LookingSenstive);
+		LookVector.Y *= (UGameplayStatics::GetWorldDeltaSeconds(this) * LookingSenstive);
+
+
+		FRotator CalculatedSpringArmRotation;
+
+		CalculatedSpringArmRotation =
+			SpringArm->GetComponentRotation() + FRotator(-LookVector.Y, LookVector.X, 0.0f);
+
+		CalculatedSpringArmRotation.Pitch = FMath::Clamp(
+			CalculatedSpringArmRotation.Pitch,
+			MinPitchAngle,
+			MaxPitchAngle);
+
+		CalculatedSpringArmRotation.Yaw = FRotator::ClampAxis(CalculatedSpringArmRotation.Yaw);
+
+		SpringArm->SetWorldRotation(CalculatedSpringArmRotation);
+	}
 }
 
 void AHeroPawn::Dash()
@@ -234,93 +327,94 @@ void AHeroPawn::ResetDashing()
 	GetMesh()->SetRelativeRotation(FRotator(0, OriginMeshYaw, 0).Quaternion());
 }
 
+void AHeroPawn::AttackPressed()
+{
+	if (AttackComponent &&
+		bCanInput &&
+		CurrentJumpCount == 0 &&
+		CurrentStamina >= AttackStaminaCost)
+	{
+		bCanInput = false;
+		LostStamina(AttackStaminaCost);
+		AttackComponent->PrepareAttack();
+	}
+}
+
+void AHeroPawn::AttackPressing()
+{
+	if (ThresholdAttackChargingTime > AttackChargingTime && !bIsOverCharging)
+	{
+		AttackChargingTime += UGameplayStatics::GetWorldDeltaSeconds(this);
+
+		if (ThresholdAttackChargingTime <= AttackChargingTime)
+		{
+			bIsOverCharging = true;
+			AttackComponent->ChargedAttack();
+		}
+	}
+}
+
+void AHeroPawn::AttackReleased()
+{
+	if (!bIsOverCharging)
+	{
+		AttackComponent->NormalAttack();
+	}
+
+	bIsOverCharging = false;
+	AttackChargingTime = 0;
+}
+
+void AHeroPawn::UpdateStamina()
+{
+	GameUI->UpdateStaminaBar(CurrentStamina / MaxStamina);
+}
+
+void AHeroPawn::LostStamina(float amount)
+{
+	CurrentStamina -= amount;
+
+	if (CurrentStamina < 0)
+	{
+		CurrentStamina = 0;
+	}
+
+	bChargeStamina = false;
+
+	GetWorldTimerManager().ClearTimer(StaminaChargeTimeHandle);
+
+	GetWorldTimerManager().SetTimer(
+		StaminaChargeTimeHandle,
+		this,
+		&AHeroPawn::ChargeStamina,
+		RechargeTime);
+
+	UpdateStamina();
+}
+
+void AHeroPawn::EarnStamina(float amount)
+{
+	CurrentStamina += amount;
+
+	if (CurrentStamina > MaxStamina)
+	{
+		CurrentStamina = MaxStamina;
+	}
+
+	UpdateStamina();
+}
+
 void AHeroPawn::ChargeStamina()
 {
 	bChargeStamina = true;
 }
 
-void AHeroPawn::Move(const FInputActionInstance& Instance)
+void AHeroPawn::SetLockedOnTargetHPBar(bool bIsAct)
 {
-	MoveDirection = FVector(
-		Instance.GetValue().Get<FVector2D>().GetSafeNormal().X,
-		Instance.GetValue().Get<FVector2D>().GetSafeNormal().Y,
-		0);
-
-	if (bCanInput && Controller)
+	ACharacterBase* CharacterBase = Cast<ACharacterBase>(LockedOnTarget);
+	if (CharacterBase)
 	{
-		FVector ForwardDirection;
-		FVector RightDirection;
-		FVector Direction;
-
-
-		if (LockedOnTarget)
-		{
-			ForwardDirection = FRotationMatrix(GetActorRotation()).GetUnitAxis(EAxis::X);
-			RightDirection = FRotationMatrix(GetActorRotation()).GetUnitAxis(EAxis::Y);
-			Direction = ForwardDirection * MoveDirection.Y + RightDirection * MoveDirection.X;
-		}
-		else
-		{
-			FRotator CameraRotator = SpringArm->GetRelativeRotation();
-			CameraRotator.Pitch = 0;
-			CameraRotator.Roll = 0;
-
-			ForwardDirection = FRotationMatrix(CameraRotator).GetUnitAxis(EAxis::X);
-			RightDirection = FRotationMatrix(CameraRotator).GetUnitAxis(EAxis::Y);
-			Direction = ForwardDirection * MoveDirection.Y + RightDirection * MoveDirection.X;
-
-			if (!Direction.IsNearlyZero())
-			{
-				FRotator CalculatedRotation = FMath::RInterpTo(
-					Controller->GetControlRotation(),
-					Direction.Rotation(),
-					UGameplayStatics::GetWorldDeltaSeconds(this), MoveRotationSpeed);
-
-				Controller->SetControlRotation(CalculatedRotation);
-			}
-		}
-
-		AnimInstance->StopAllMontages(0.2f);
-
-		AddMovementInput(Direction.GetSafeNormal(), 1);
-	}
-}
-
-void AHeroPawn::StopMove()
-{
-	if (LockedOnTarget && bCanInput)
-	{
-		AnimInstance->Montage_Stop(0.25f);
-	}
-	
-	if (GetCharacterMovement())
-	{
-		GetCharacterMovement()->StopMovementImmediately();
-	}
-}
-
-void AHeroPawn::Look(const FInputActionInstance& Instance)
-{
-	if (!LockedOnTarget)
-	{
-		FVector2D LookVector = Instance.GetValue().Get<FVector2D>();
-		LookVector.X *= (UGameplayStatics::GetWorldDeltaSeconds(this) * LookingSenstive);
-		LookVector.Y *= (UGameplayStatics::GetWorldDeltaSeconds(this) * LookingSenstive);
-
-
-		FRotator CalculatedSpringArmRotation;
-
-		CalculatedSpringArmRotation =
-			SpringArm->GetComponentRotation() + FRotator(-LookVector.Y, LookVector.X, 0.0f);
-
-		CalculatedSpringArmRotation.Pitch = FMath::Clamp(
-			CalculatedSpringArmRotation.Pitch,
-			MinPitchAngle,
-			MaxPitchAngle);
-
-		CalculatedSpringArmRotation.Yaw = FRotator::ClampAxis(CalculatedSpringArmRotation.Yaw);
-
-		SpringArm->SetWorldRotation(CalculatedSpringArmRotation);
+		CharacterBase->HealthComponen->SetHpBarVisible(bIsAct);
 	}
 }
 
@@ -459,7 +553,6 @@ bool AHeroPawn::DetectEnemy(TArray<FHitResult>& HitResult)
 	return bHitted;
 }
 
-
 void AHeroPawn::SetInputSubsystem()
 {
 	APlayerController* PlayerController = Cast<APlayerController>(Controller);
@@ -479,84 +572,5 @@ void AHeroPawn::SetInputSubsystem()
 				Subsystem->AddMappingContext(CommonMappingContext, 0);
 			}
 		}
-	}
-}
-
-void AHeroPawn::SetLockedOnTargetHPBar(bool bIsAct)
-{
-	ACharacterBase* CharacterBase = Cast<ACharacterBase>(LockedOnTarget);
-	if (CharacterBase)
-	{
-		CharacterBase->HealthComponen->SetHpBarVisible(bIsAct);
-	}
-}
-
-void AHeroPawn::PressedSudo()
-{
-	//UE_LOG(LogTemp, Display, TEXT("Pressed : %f"), ChargingTime);
-	GetWorldTimerManager().SetTimer(ChargingTimeHanlde, this, &AHeroPawn::AttackComponent->ChargedAttack,)
-}
-
-void AHeroPawn::PressingSudo()
-{
-	//UE_LOG(LogTemp, Display, TEXT("Pressing : %f"), ChargingTime);
-}
-
-void AHeroPawn::ReleasedSudo()
-{
-	//UE_LOG(LogTemp, Display, TEXT("Released : %f"), ChargingTime);
-}
-
-void AHeroPawn::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-	if (bChargeStamina)
-	{
-		EarnStamina(StaminaChargeAmount * DeltaTime);
-	}
-
-	if (LockedOnTarget)
-	{
-		FVector Direction = LockedOnTarget->GetActorLocation() - GetActorLocation();
-		FRotator TargetRotation = Direction.Rotation();
-		FRotator CurrentRotation = Controller->GetControlRotation();
-		FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, LockOnRotationSpeed);
-		Controller->SetControlRotation(NewRotation);
-
-		FRotator NewSpringArmRotation = FMath::RInterpTo(SpringArm->GetRelativeRotation(), FRotator(-20, 0, 0), DeltaTime, LockOnRotationSpeed);
-		SpringArm->SetRelativeRotation(NewSpringArmRotation);
-
-		TargetWidgetComponent->SetWorldLocation(LockedOnTarget->GetActorLocation());
-		DrawDebugBox(GetWorld(), LockedOnTarget->GetActorLocation(), FVector(100, 100, 100), FColor::Blue);
-	}
-
-	if (!bCanDashing)
-	{
-		DashTick(DeltaTime);
-	}
-}
-
-void AHeroPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-	UEnhancedInputComponent* Input = Cast<UEnhancedInputComponent>(PlayerInputComponent);
-
-	if (Input)
-	{
-		Input->BindAction(IA_Jump, ETriggerEvent::Started, this, &AHeroPawn::Jump);
-		Input->BindAction(IA_Dash, ETriggerEvent::Started, this, &AHeroPawn::Dash);
-		Input->BindAction(IA_Movement, ETriggerEvent::Triggered, this, &AHeroPawn::Move);
-		Input->BindAction(IA_Movement, ETriggerEvent::Completed, this, &AHeroPawn::StopMove);
-		Input->BindAction(IA_Looking, ETriggerEvent::Triggered, this, &AHeroPawn::Look);
-		//Input->BindAction(IA_Attack, ETriggerEvent::Started, this, &AHeroPawn::NormalAttack);
-		Input->BindAction(IA_LockOn, ETriggerEvent::Started, this, &AHeroPawn::LockOnTarget);
-		Input->BindAction(IA_ChangeLockOn, ETriggerEvent::Started, this, &AHeroPawn::ChangeLockOn);
-
-		//TODO: Delete it, Just testing code;
-		Input->BindAction(IA_Attack, ETriggerEvent::Started, this, &AHeroPawn::PressedSudo);
-		Input->BindAction(IA_Attack, ETriggerEvent::Triggered, this, &AHeroPawn::PressingSudo);
-		Input->BindAction(IA_Attack, ETriggerEvent::Completed, this, &AHeroPawn::ReleasedSudo);
 	}
 }

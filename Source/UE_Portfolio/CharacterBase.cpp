@@ -81,8 +81,3 @@ void ACharacterBase::Death(FVector ForceDirection)
 		CapsuleComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 }
-
-void ACharacterBase::NormalAttack()
-{
-	AttackComponent->NormalAttack();
-}

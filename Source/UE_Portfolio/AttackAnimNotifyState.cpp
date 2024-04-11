@@ -9,7 +9,7 @@ void UAttackAnimNotifyState::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnim
 	
 	if (ACharacterBase* CharacterBase = Cast<ACharacterBase>(MeshComp->GetOwner()))
 	{
-		CharacterBase->AttackComponent->bIsAttacking = true;
+		CharacterBase->AttackComponent->SetAttackMode(true, DamageMultiplier);
 	}
 }
 
@@ -24,6 +24,6 @@ void UAttackAnimNotifyState::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSe
 
 	if (ACharacterBase* CharacterBase = Cast<ACharacterBase>(MeshComp->GetOwner()))
 	{
-		CharacterBase->AttackComponent->bIsAttacking = false;
+		CharacterBase->AttackComponent->SetAttackMode(false, DamageMultiplier);
 	}
 }

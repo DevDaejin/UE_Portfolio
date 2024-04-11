@@ -33,10 +33,6 @@ void UAttackComponent::AttackBase(UAnimMontage* AnimMontage)
 	ACharacter* Character = Cast<ACharacter>(GetOwner());
 	if (Character)
 	{
-		Enemies.Empty();
-		OldFVectors.Empty();
-		CurrentFVectors.Empty();
-
 		UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
 		if (AnimInstance && AnimMontage && !bIsAttacking)
 		{
@@ -45,9 +41,24 @@ void UAttackComponent::AttackBase(UAnimMontage* AnimMontage)
 	}
 }
 
+void UAttackComponent::PrepareAttack()
+{
+	AttackBase(PrepareAttackMontage);
+}
+
 void UAttackComponent::NormalAttack()
 {
-	AttackBase(NormalAttackMontage);
+	ACharacter* Character = Cast<ACharacter>(GetOwner());
+	if (Character)
+	{
+		UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
+		bool bIsCurrentAnimPrepare = AnimInstance->Montage_IsPlaying(PrepareAttackMontage);
+
+		if (bIsCurrentAnimPrepare)
+		{ 
+			AttackBase(NormalAttackMontage);
+		}
+	}	
 }
 
 void UAttackComponent::ChargedAttack()
@@ -99,17 +110,28 @@ void UAttackComponent::CheckWeaponCollision()
 				ACharacterBase* CharacterBase = Cast<ACharacterBase>(Hitted.GetActor());
 				if (CharacterBase && !Enemies.Contains(CharacterBase))
 				{
-					UE_LOG(LogTemp, Display, TEXT("CharacterBase %s"), *CharacterBase->GetFName().ToString());
+					float DamageResult = Damage * DamageMultiplier;
+
 					FPointDamageEvent DamageEvent;
 					DamageEvent.HitInfo = Hitted;
 					DamageEvent.ShotDirection = (End - Start).GetSafeNormal();
-					DamageEvent.Damage = Damage;
+					DamageEvent.Damage = DamageResult;
 
-					CharacterBase->TakeDamage(Damage, DamageEvent, GetOwner()->GetInstigatorController(), GetOwner());
+					CharacterBase->TakeDamage(DamageResult, DamageEvent, GetOwner()->GetInstigatorController(), GetOwner());
 					Enemies.Add(CharacterBase);
 				}
 			}
 		}
 	}
+}
+
+void UAttackComponent::SetAttackMode(bool IsAttack, float Multiplier)
+{
+	Enemies.Empty();
+	OldFVectors.Empty();
+	CurrentFVectors.Empty();
+
+	bIsAttacking = IsAttack;
+	DamageMultiplier = Multiplier;
 }
 

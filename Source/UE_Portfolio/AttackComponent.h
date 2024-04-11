@@ -20,11 +20,15 @@ protected:
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	void AttackBase(UAnimMontage* AnimMontage);
+	void PrepareAttack();
 	void NormalAttack();
 	void ChargedAttack();
 	void CheckWeaponCollision();
-	bool bIsAttacking;
+	void SetAttackMode(bool IsAttack, float Multiplier = 1);
 
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	UAnimMontage* PrepareAttackMontage;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
 	UAnimMontage* NormalAttackMontage;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
@@ -38,6 +42,9 @@ private:
 	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"))
 	int WeaponTraceSegment = 1;
 	int MinWeaponTraceSegment = 2;
+
 	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"))
 	float Damage = 10;
+	float DamageMultiplier = 1;
+	bool bIsAttacking;
 };
